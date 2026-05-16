@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Submitted Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #ecf0f1;
+            padding: 30px;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 25px;
+        }
+        .header h2 {
+            margin: 0 0 5px 0;
+        }
+        .header p {
+            margin: 0;
+            opacity: 0.8;
+        }
+        .content {
+            padding: 25px;
+        }
+        .form-card {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        .form-meta {
+            color: #7f8c8d;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-accepted { background: #27ae60; color: white; }
+        .status-rejected { background: #e74c3c; color: white; }
+        .status-pending { background: #f39c12; color: white; }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .details-table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+        .details-table td:first-child {
+            font-weight: bold;
+            width: 35%;
+            background: #f0f0f0;
+        }
+        .close-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 20px;
+        }
+        .close-btn:hover {
+            background: #2980b9;
+        }
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>📄 Submitted Form Details</h2>
+        <p id="projectName">Loading project...</p>
+    </div>
+    <div class="content" id="content">
+        <div style="text-align: center; padding: 40px;">Loading form data...</div>
+    </div>
+    <div style="text-align: right;">
+        <button class="close-btn" onclick="window.close()">Close</button>
+    </div>
+</div>
+
+<script>
+    // Get project info from localStorage
+    const projectId = localStorage.getItem("viewFormProjectId");
+    const projectName = localStorage.getItem("viewFormProjectName");
+    
+    document.getElementById("projectName").innerHTML = `<strong>Project:</strong> ${projectName || 'Unknown'}`;
+    
+    // Get all form submissions
+    const allSubmissions = JSON.parse(localStorage.getItem("formSubmissions")) || [];
+    const projectSubmissions = allSubmissions.filter(s => s.projectId === projectId);
+    
+    const content = document.getElementById("content");
+    
+    if (projectSubmissions.length === 0) {
+        content.innerHTML = '<div class="no-data">❌ No form submissions found for this project.</div>';
+    } else {
+        let html = '';
+        projectSubmissions.forEach((submission, index) => {
+            const statusClass = submission.workApproval === "Accepted" ? "status-accepted" : 
+                               (submission.workApproval === "Rejected" ? "status-rejected" : "status-pending");
+            
+            html += `
+                <div class="form-card">
+                    <div class="form-title">📋 ${submission.formType || 'Form'}</div>
+                    <div class="form-meta">
+                        <strong>Submitted by:</strong> ${submission.inspector || 'Unknown'} | 
+                        <strong>Date:</strong> ${submission.submittedAt || 'Unknown'} |
+                        <strong>Status:</strong> <span class="status-badge ${statusClass}">${submission.workApproval || 'Pending'}</span>
+                    </div>
+                    <table class="details-table">
+                        <tr><td>Project Name</td><td>${submission.projectName || 'N/A'}</td></tr>
+                        <tr><td>Location</td><td>${submission.location || 'N/A'}</td></tr>
+                        <tr><td>Distribution</td><td>${submission.distribution?.join(', ') || 'N/A'}</td></tr>
+            `;
+            
+            // Add remarks if exists
+            if (submission.remarks) {
+                html += `<tr><td>Remarks</td><td>${submission.remarks}</td></tr>`;
+            }
+            
+            // Add compliance items
+            if (submission.compliance && submission.compliance.length > 0) {
+                html += `<tr><td colspan="2" style="background:#e8e8e8; font-weight:bold;">Compliance Checklist</td></tr>`;
+                submission.compliance.forEach(item => {
+                    html += `<tr><td>${item.description.substring(0, 80)}</td><td>${item.status || 'Checked'}</td></tr>`;
+                });
+            }
+            
+            // Add other details
+            if (submission.details) {
+                let hasDetails = false;
+                for (const [key, value] of Object.entries(submission.details)) {
+                    if (value && value.trim() !== '') {
+                        if (!hasDetails) {
+                            html += `<tr><td colspan="2" style="background:#e8e8e8; font-weight:bold;">Additional Details</td></tr>`;
+                            hasDetails = true;
+                        }
+                        const shortKey = key.length > 50 ? key.substring(0, 50) + '...' : key;
+                        const shortValue = value.length > 100 ? value.substring(0, 100) + '...' : value;
+                        html += `<tr><td>${shortKey}</td><td>${shortValue}</td></tr>`;
+                    }
+                }
+            }
+            
+            html += `</table></div>`;
+        });
+        content.innerHTML = html;
+    }
+</script>
+<script src="storage.js"></script>
+</body>
+</html>

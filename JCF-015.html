@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DepEd RFI · FINISHING WORK REQUEST
+        – Fillable Form</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background: #d0d5dc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 30px 20px;
+            font-family: 'Arial', 'Helvetica', sans-serif;
+        }
+        .form-container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            border: 2px solid #1a1a1a;
+        }
+
+        /* ----- header tables ----- */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid black;
+            background: white;
+        }
+        .header-table td { vertical-align: top; }
+        .left-panel {
+            width: 55%;
+            border-right: 2px solid black;
+            padding: 12px 10px 10px 10px;
+        }
+        .inner-logo-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .inner-logo-table td { vertical-align: middle; }
+        .logo-cell {
+            width: 18%;
+            text-align: center;
+        }
+        .center-text {
+            text-align: center;
+            font-size: 12.5px;
+            line-height: 1.45;
+            padding: 0 4px;
+        }
+        .center-text b { font-weight: 700; }
+        .dept-name { font-size: 16px; font-weight: 700; }
+        .logo-placeholder {
+            display: inline-block;
+            background: #e0e3e9;
+            width: 72px;
+            height: 72px;
+            border: 1px solid #8a8a8a;
+            border-radius: 6px;
+            text-align: center;
+            line-height: 70px;
+            font-size: 10px;
+            color: #3d3d3d;
+            font-weight: bold;
+            box-shadow: inset 0 0 0 1px #b0b0b0;
+        }
+        .logo-placeholder::after { content: "LOGO"; }
+        .right-panel { width: 45%; padding: 0; }
+        .right-inner-table { width: 100%; border-collapse: collapse; }
+        .title-cell {
+            width: 58%;
+            padding: 14px 8px 8px 14px;
+            vertical-align: top;
+        }
+        .title-text {
+            font-size: 23px;
+            font-weight: 800;
+            line-height: 1.3;
+            letter-spacing: -0.3px;
+            text-transform: uppercase;
+        }
+        .doc-box-cell { width: 42%; padding: 0; }
+        .doc-box-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            border-left: 1px solid black;
+        }
+        .doc-box-table td {
+            border: 1px solid black;
+            padding: 6px 4px;
+            font-weight: 600;
+            background: white;
+        }
+        .doc-box-table td:first-child { background-color: #f7f7f7; width: 45%; }
+        .doc-box-table input {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 12px;
+            padding: 2px 0;
+            background: transparent;
+        }
+        .page-cell { text-align: center; font-weight: 600; }
+        .contract-row { border-top: 1px solid black; }
+        .contract-cell {
+            padding: 10px 10px 10px 15px;
+            font-weight: 600;
+            font-size: 13px;
+            background: white;
+        }
+        .contract-id-boxes { display: inline-block; margin-left: 12px; }
+        .id-box {
+            width: 30px;
+            height: 28px;
+            text-align: center;
+            border: 1.8px solid #222;
+            margin: 0 3px;
+            font-size: 15px;
+            background: white;
+            font-weight: 600;
+        }
+
+        /* details table */
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid black;
+            border-top: none;
+            font-size: 12.5px;
+            background: white;
+        }
+        .details-table td {
+            border: 1px solid black;
+            padding: 8px 6px;
+            vertical-align: middle;
+        }
+        .details-table .label-cell {
+            font-weight: 700;
+            background-color: #f4f4f4;
+            width: 18%;
+        }
+        .details-table input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 12.5px;
+            padding: 4px 0;
+        }
+
+        /* ----- checklist section ----- */
+        .checklist-container {
+            border-left: 2px solid black;
+            border-right: 2px solid black;
+            border-bottom: 2px solid black;
+            background: white;
+            padding: 12px 16px 18px 16px;
+        }
+        .compliance-header {
+            font-weight: 800;
+            font-size: 13.5px;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+        }
+
+        /* unified inspection table */
+        .inspection-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+            table-layout: fixed;
+            border: 1.5px solid #1e1e1e;
+        }
+        .inspection-table th, .inspection-table td {
+            border: 1px solid #1e1e1e;
+            padding: 8px 6px;
+            vertical-align: top;
+        }
+        .inspection-table th {
+            background-color: #ececec;
+            font-weight: 700;
+            text-align: center;
+        }
+        .comp-col { width: 38%; }
+        .complied-col { width: 24%; }
+        .remarks-col { width: 20%; }
+        .actions-col { width: 18%; }
+
+        .checkbox-group {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 4px;
+        }
+        .check-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: #444;
+        }
+        .check-item-dfc {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: #444;
+        }
+        .check-box-input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #1e3a5f;
+        }
+        .section-head {
+            background: #d9e1ec;
+            font-weight: 800;
+            font-size: 13px;
+            padding: 6px 8px;
+            border: 1px solid #1e1e1e;
+        }
+        .item-desc {
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .wp-badge {
+            background: #1e3a5f;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .dfc-remark {
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-style: italic;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Single line remarks area */
+        .remarks-single-line {
+            margin: 15px 0 25px 0;
+        }
+        .remarks-input-single {
+            width: 100%;
+            border: none;
+            border-bottom: 2px solid #1e1e1e;
+            outline: none;
+            font-size: 13px;
+            padding: 10px 4px;
+            background: transparent;
+            font-family: inherit;
+        }
+        .remarks-input-single:focus {
+            border-bottom-color: #1e3a5f;
+        }
+
+        /* QC / QA Headers */
+        .qc-qa-headers {
+            display: flex;
+            margin-top: 20px;
+            margin-bottom: 0;
+            font-weight: 800;
+            font-size: 16px;
+        }
+        .qc-header {
+            flex: 1;
+            text-align: center;
+            border: 1.5px solid #1e1e1e;
+            border-bottom: none;
+            padding: 8px;
+            background: #f0f0f0;
+        }
+        .qa-header {
+            flex: 1;
+            text-align: center;
+            border: 1.5px solid #1e1e1e;
+            border-bottom: none;
+            border-left: none;
+            padding: 8px;
+            background: #f0f0f0;
+        }
+
+        /* SIGNATURE TABLE - EXACTLY AS SCREENSHOT */
+        .approval-signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid #1e1e1e;
+            font-size: 12px;
+            margin-top: 0;
+        }
+        .approval-signature-table td, .approval-signature-table th {
+            border: 1px solid #1e1e1e;
+            padding: 10px 6px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .approval-signature-table .header-cell {
+            background-color: #f0f0f0;
+            font-weight: 700;
+            font-size: 12px;
+        }
+        .approval-signature-table input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #888;
+            outline: none;
+            font-size: 11px;
+            padding: 4px 2px;
+            background: transparent;
+            text-align: center;
+        }
+        .approval-signature-table .signature-sub {
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 3px;
+        }
+        .accept-check, .reject-check {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #1e3a5f;
+            margin: 0;
+        }
+
+        /* Distribution */
+        .distribution-section {
+            margin-top: 20px;
+            border: 1.5px solid #1e1e1e;
+            padding: 12px 18px;
+            background: #fafafa;
+        }
+        .distribution-title {
+            font-weight: 800;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .dist-check-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px 40px;
+        }
+        .dist-check {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+        .dist-check input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #1e3a5f;
+        }
+
+        .dfc-text-only {
+            font-weight: 700;
+            font-size: 12px;
+            color: #333;
+        }
+
+        /* Submit button */
+        .submit-section {
+            margin-top: 25px;
+            text-align: right;
+            padding: 10px 0;
+        }
+        .submit-btn {
+            background: #1e3a5f;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #0f2440;
+            transition: background 0.2s;
+        }
+        .submit-btn:hover {
+            background: #2a4f7c;
+        }
+        .submit-btn:active {
+            background: #0f2440;
+        }
+        .logo-img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+}
+    </style>
+</head>
+<body>
+<div class="form-container">
+
+    <!-- === HEADER === -->
+    <table class="header-table">
+        <tr>
+            <td class="left-panel">
+                <table class="inner-logo-table">
+                    <tr>
+                        <td class="logo-cell">
+    <img src="left-logo.png" alt="Logo" class="logo-img">
+</td>
+                        <td class="center-text">
+                            <b>REPUBLIC OF THE PHILIPPINES</b><br>
+                            <b class="dept-name">Department of Education</b><br>
+                            REGION V<br>
+                            REGIONAL CENTER SITE, RAWIS, LEGAZPI CITY 4500<br>
+                            (052) 482-0046 | (052) 482-0373<br>
+                            www.depedregion5.ph | deped.rov@deped.gov.ph
+                        </td>
+                        <td class="logo-cell">
+    <img src="logo.png" alt="Logo" class="logo-img">
+</td>
+                    </tr>
+                </table>
+            </td>
+            <td class="right-panel">
+                <table class="right-inner-table">
+                    <tr>
+                        <td class="title-cell">
+                            <div class="title-text">
+                              FINISHING WORK<br>
+                                 REQUEST <br>
+                                
+                            </div>
+                        </td>
+                        <td class="doc-box-cell">
+                            <table class="doc-box-table">
+                                <tr><td>Doc. Code:</td><td><input type="text" placeholder=""></td></tr>
+                                <tr><td>Revision No.</td><td><input type="text" placeholder=""></td></tr>
+                                <tr><td>Date</td><td><input type="text" placeholder=""></td></tr>
+                                <tr><td>Page No.</td><td class="page-cell">1 of 1</td></tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr class="contract-row">
+                        <td colspan="2" class="contract-cell">
+                            CONTRACT ID:
+                            <span class="contract-id-boxes" id="contractIdContainer">
+                                <input class="id-box contract-digit" type="text" maxlength="1" data-index="0"> 
+                                <input class="id-box contract-digit" type="text" maxlength="1" data-index="1">
+                                <input class="id-box contract-digit" type="text" maxlength="1" data-index="2"> 
+                                <input class="id-box contract-digit" type="text" maxlength="1" data-index="3">
+                                <input class="id-box contract-digit" type="text" maxlength="1" data-index="4"> 
+                                <input class="id-box contract-digit" type="text" maxlength="1" data-index="5">
+                                <input class="id-box contract-digit" type="text" maxlength="1" data-index="6"> 
+                                <input class="id-box contract-digit" type="text" maxlength="1" data-index="7">
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- details row -->
+    <table class="details-table">
+        <tr><td class="label-cell">CONTRACT NAME:</td><td colspan="3"><input type="text" placeholder=""></td></tr>
+        <tr><td class="label-cell">LOCATION:</td><td colspan="3"><input type="text" placeholder=""></td></tr>
+        <tr><td class="label-cell">DATE REQUESTED:</td><td><input type="text" placeholder=""></td><td class="label-cell">RFI No.:</td><td><input type="text" placeholder=""></td></tr>
+        <tr><td class="label-cell">STRUCTURE:</td><td><input type="text" placeholder=""></td><td class="label-cell">AREA/FLOOR LEVEL:</td><td><input type="text" placeholder=""></td></tr>
+        <tr><td class="label-cell">GRIDLINE:</td><td><input type="text" placeholder=""></td><td class="label-cell">ACTUAL INSPECTION DATE/TIME:</td><td><input type="text" placeholder=""></td></tr>
+    </table>
+
+    <!-- === CHECKLIST SECTION === -->
+    <div class="checklist-container">
+        <div class="compliance-header">
+            CHECK THAT THE FOLLOWING COMPLY WITH APPROVED SUBMITTALS FOR CONSTRUCTION DRAWINGS AND TECHNICAL SPECIFICATIONS.
+        </div>
+
+        <table class="inspection-table">
+            <thead>
+                <tr>
+                    <th class="comp-col">COMPONENTS</th>
+                    <th class="complied-col">COMPLIED</th>
+                    <th class="remarks-col">REMARKS</th>
+                    <th class="actions-col">ACTIONS REQUIRED</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 4px 8px; font-weight: 600; background: #f3f6fb;"></td>
+                    <td style="padding: 4px 4px;">
+                        <div style="display:flex; justify-content:space-around; font-weight:700; font-size:12px;">
+                            <span>DFC</span> <span>YES</span> <span>NO</span> <span>N/A</span>
+                        </div>
+                    </td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <span style="font-size: 11px; font-style: italic;">(Witness Points (WP) as below)</span>
+                    </td>
+                    <td></td>
+                </tr>
+
+                <tr><td colspan="4" class="section-head">A. GENERAL
+ </td></tr>
+                
+                <tr><td class="item-desc">1. Materials passed the required testing or necessary
+inspection (with attached test result or EC)</td><td><div class="checkbox-group"><span class="check-item-dfc"><span class="dfc-text-only">—</span></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span></div></td><td><input type="text" class="remark-input" placeholder=""></td><td><input type="text" class="action-input" placeholder=""></td></tr>
+ <tr><td class="item-desc">2. Required tools and equipment are on site</td><td><div class="checkbox-group"><span class="check-item-dfc"><span class="dfc-text-only">—</span></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span></div></td><td><input type="text" class="remark-input" placeholder=""></td><td><input type="text" class="action-input" placeholder=""></td></tr>
+                               
+                <tr><td colspan="4" class="section-head">B.  SURFACE READY TO RECEIVE REQUIRED FINISHES
+ </td></tr>
+                
+                <tr><td class="item-desc">3. Prepared surface free from any form of damages</td><td><div class="checkbox-group"><span class="check-item-dfc"><span class="dfc-text-only">—</span></span><span class="check-item"><input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span></div></td><td><input type="text" class="remark-input" placeholder=""></td><td><input type="text" class="action-input" placeholder=""></td></tr>
+                <tr><td class="item-desc">4.  Squareness and plumbness</td><td><div class="checkbox-group"><span class="check-item-dfc"><span class="dfc-text-only">—</span></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span></div></td><td><input type="text" class="remark-input" placeholder=""></td><td><input type="text" class="action-input" placeholder=""></td></tr>                
+                <tr><td class="item-desc">5. Required neutralizers, putty, patching compound are properly
+applied</td><td><div class="checkbox-group"><span class="check-item-dfc"><span class="dfc-text-only">—</span></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span></div></td><td><input type="text" class="remark-input" placeholder=""></td><td><input type="text" class="action-input" placeholder=""></td></tr>
+<tr><td class="item-desc">6. Samples/model area/mock-up are approved</td><td><div class="checkbox-group"><span class="check-item-dfc"><span class="dfc-text-only">—</span></span><span class="check-item"><input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span></div></td><td><input type="text" class="remark-input" placeholder=""></td><td><input type="text" class="action-input" placeholder=""></td></tr> 
+                <td colspan="4" class="section-head">C. CONSTRUCTION SAFETY REQUIREMENTS </td>
+<tr><td class="item-desc">7.  Appropriate scaffolds</td><td><div class="checkbox-group"><span class="check-item-dfc"><span class="dfc-text-only">—</span></span><span class="check-item"><input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span></div></td><td><input type="text" class="remark-input" placeholder=""></td><td><input type="text" class="action-input" placeholder=""></td></tr> 
+<tr><td class="item-desc">8.Personal Protective Equipment (PPE)</td><td><div class="checkbox-group"><span class="check-item-dfc"><span class="dfc-text-only">—</span></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span><span class="check-item"> <input type="checkbox" class="check-box-input"></span></div></td><td><input type="text" class="remark-input" placeholder=""></td><td><input type="text" class="action-input" placeholder=""></td></tr>
+                
+</tbody>
+        </table>
+
+        <div class="dfc-remark">
+            REMARKS: DFC = Dimension for Compliance
+        </div>
+
+        <!-- Single line remarks area -->
+        <div class="remarks-single-line">
+            <input type="text" class="remarks-input-single" placeholder="Enter additional remarks here...">
+        </div>
+
+        <!-- QC / QA Headers -->
+
+
+        <!-- SIGNATURE TABLE - EXACTLY AS SCREENSHOT -->
+        <table class="approval-signature-table">
+    <tr>
+        <!-- QC vertical -->
+        <td rowspan="2" style="writing-mode: vertical-rl; transform: rotate(180deg); font-weight:700; width:4%;">QC</td>
+
+        <td class="header-cell" style="width:18%;">PREPARED BY:</td>
+        <td class="header-cell" style="width:18%;">CONFIRMED BY:</td>
+
+        <!-- QA vertical -->
+        <td rowspan="2" style="writing-mode: vertical-rl; transform: rotate(180deg); font-weight:700; width:4%;">QA</td>
+
+        <td class="header-cell" style="width:22%;">WORK APPROVAL:</td>
+        <td class="header-cell" style="width:10%;">Accepted</td>
+        <td class="header-cell" style="width:10%;">Rejected</td>
+    </tr>
+
+    <tr>
+        <!-- QC side -->
+        <td>
+            <input type="text">
+            <div class="signature-sub">Contractor</div>
+        </td>
+
+        <td>
+            <input type="text">
+            <div class="signature-sub">QC Engineer</div>
+        </td>
+
+        <!-- QA side (HORIZONTAL layout like screenshot) -->
+        <td>
+            <div style="display:flex; justify-content:space-between; gap:10px;">
+                
+                <div style="flex:1; text-align:center;">
+                    <div style="font-weight:700; font-size:11px;">INSPECTED BY:</div>
+                    <input type="text">
+                    <div class="signature-sub">DepEd Inspector</div>
+                </div>
+
+                <div style="flex:1; text-align:center;">
+                    <div style="font-weight:700; font-size:11px;">WITNESSED BY:</div>
+                    <input type="text">
+                    <div class="signature-sub">Contractor</div>
+                </div>
+
+                <div style="flex:1; text-align:center;">
+                    <div style="font-weight:700; font-size:11px;">APPROVED BY:</div>
+                    <input type="text">
+                    <div class="signature-sub">DepEd Project Engineer</div>
+                </div>
+
+            </div>
+        </td>
+
+        <!-- checkboxes -->
+        <td style="text-align:center; vertical-align:middle;">
+            <input type="checkbox" class="accept-check">
+        </td>
+
+        <td style="text-align:center; vertical-align:middle;">
+            <input type="checkbox" class="reject-check">
+        </td>
+    </tr>
+</table>
+
+        <!-- Distribution -->
+        <div class="distribution-section">
+            <div class="distribution-title">DISTRIBUTION:</div>
+            <div class="dist-check-group">
+                <label class="dist-check"><input type="checkbox"> Contractor</label>
+                <label class="dist-check"><input type="checkbox"> QC Engineer</label>
+                <label class="dist-check"><input type="checkbox"> Inspector</label>
+                <label class="dist-check"><input type="checkbox"> Project Engineer</label>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="submit-section">
+            <button class="submit-btn" onclick="alert('Form submitted successfully!')">SUBMIT FORM</button>
+        </div>
+    </div>
+</div>
+
+<script src="form-handler.js"></script>
+
+<style>
+    .remark-input {
+        width: 100%;
+        border: none;
+        border-bottom: 1px solid #ccc;
+        outline: none;
+        font-size: 12px;
+        padding: 4px 0;
+        background: transparent;
+    }
+    .action-input {
+        width: 100%;
+        border: none;
+        border-bottom: 1px solid #ccc;
+        outline: none;
+        font-size: 12px;
+        padding: 4px 0;
+        background: transparent;
+    }
+    .remark-input:focus, .action-input:focus {
+        border-bottom-color: #1e3a5f;
+    }
+</style>
+<script src="storage.js"></script>
+</body>
+</html>

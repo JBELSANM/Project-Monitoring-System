@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BMS Dashboard</title>
+    <style>
+    
+        /* Existing Dashboard Styles */
+        body { margin: 0; font-family: Arial; display: flex; background: #ecf0f1; }
+        .sidebar { width: 220px; background: #2c3e50; color: white; height: 100vh; padding: 20px; position: fixed; }
+        .sidebar h2 { margin-bottom: 30px; }
+        .sidebar a { display: block; color: white; padding: 12px; text-decoration: none; margin-top: 5px; border-radius: 5px; cursor: pointer; }
+        .sidebar a:hover { background: #34495e; }
+        .sidebar a.logout { background: #c0392b; margin-top: 50px; text-align: center; }
+        .sidebar a.logout:hover { background: #e74c3c; }
+
+        .main { margin-left: 260px; flex: 1; padding: 40px; }
+        .cards { display: flex; gap: 15px; margin-bottom: 30px; }
+        .card { flex: 1; background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .input-group { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px; margin-bottom: 10px; }
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #2980b9; color: white; }
+        button:hover { background: #3498db; }
+
+        table { width: 100%; background: white; border-radius: 10px; border-collapse: collapse; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background: #f8f9fa; }
+
+        .doc-link { background: #95a5a6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-decoration: none; cursor: pointer; }
+        .pending { color: orange; font-weight: bold; }
+        .ongoing { color: blue; font-weight: bold; }
+        .completed { color: green; font-weight: bold; }
+
+        /* Form Section Styles */
+        #reportSection, #formSection { display: none; } 
+        .form-container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; }
+        .form-header { color: #1a4d8f; text-align: center; margin-bottom: 15px; }
+        .form-container label { display: block; margin-top: 10px; font-weight: bold; font-size: 14px; }
+        .form-container input, .form-container select { width: 100%; margin-top: 5px; box-sizing: border-box; }
+        .form-container .submit-btn { width: 100%; margin-top: 15px; background: #1a4d8f; }
+
+        /* Original Report Styles */
+        .pow-container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .pow-header { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; }
+        .currency { text-align: right; font-family: 'Courier New', Courier, monospace; }
+        .percentage { text-align: center; font-weight: bold; color: #27ae60; }
+        .total-row { background-color: #ecf0f1 !important; font-weight: bold; }
+
+        .approved { color: #27ae60; font-weight: bold; }
+        .pending { color: #e67e22; font-weight: bold; }
+        .ongoing { color: #2980b9; font-weight: bold; }
+        .completed { color: #2ecc71; font-weight: bold; }
+        .rejected { color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>BMS <span id="roleBadge" style="font-size:11px; background:#3498db; padding:3px 8px; border-radius:20px; margin-left:8px;"></span></h2>
+    <a onclick="showSection('dashboardSection')">🏠 Home</a>
+    <a onclick="showSection('reportSection')">📊 Reports</a>
+    <a onclick="viewActivityLog()">📋 Activity Logs</a>
+    <a href="#" class="logout" onclick="logout()">🔒 Logout</a>
+</div>
+
+<div class="main">
+    <div id="dashboardSection">
+        <p id="displayGreeting" style="color: #2c3e50; font-weight: bold; margin-bottom: 5px; font-size: 1.1em;"></p>
+        <h1>Building Monitor - Management System</h1>
+
+        <div class="cards">
+            <div class="card"><h3 id="total">0</h3><p>Total Projects</p></div>
+            <div class="card"><h3 id="ongoing">0</h3><p>Ongoing</p></div>
+            <div class="card"><h3 id="completed">0</h3><p>Completed</p></div>
+        </div>
+
+        <div class="input-group">
+            <h3>Add New Project</h3>
+            <input id="title" placeholder="Project Name">
+            <input id="location" list="locationList" placeholder="Select or type location">
+            <datalist id="locationList">
+                <option value="ALBAY"><option value="CAMARINES NORTE"><option value="CAMARINES SUR">
+                <option value="CATANDUANES"><option value="IRIGA CITY"><option value="LEGAZPI CITY">
+                <option value="LIGAO CITY"><option value="MASBATE"><option value="MASBATE CITY">
+                <option value="NAGA CITY"><option value="SORSOGON"><option value="SORSOGON CITY">
+                <option value="TABACO CITY">
+            </datalist>
+            <button onclick="goToInspectorForm()">Create Form</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Project Name</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="list"></tbody>
+        </table>
+    </div>
+
+    <div id="formSection">
+        <div class="form-container">
+            <h2 class="form-header">New Request</h2>
+            <form id="inspectorReqForm">
+                <label>Form Type</label>
+                <select id="formType">
+                    <option>Form Enclosure Request</option>
+                    <option>Finishing Work Request</option>
+                    <option>Welding Permit</option>
+                    <option>Structure Excavation Works Request</option>
+                    <option>Installation of Roofing Materials Request</option>
+                    <option>Wall and Partition Work Request</option>
+                    <option>Ceiling Works Request</option>
+                    <option>Installation of Doors & Windows Request</option>
+                    <option>Electrical Work Request</option>
+                    <option>Mechanical Work Request</option>
+                    <option>Plumbing & Sanitary Work Request</option>
+                    <option>Installation of Fire Protection System</option>
+                </select>
+
+                <label>Contract Name</label>
+                <input type="text" id="contractName" placeholder="Enter contract name">
+
+                <label>Inspector Name</label>
+                <input type="text" id="inspectorName" placeholder="Enter inspector name">
+
+                <label>Inspector ID</label>
+                <input type="text" id="inspectorID" placeholder="Enter ID">
+
+                <button type="button" class="submit-btn" onclick="submitInspectorForm()">Submit Request</button>
+                <button type="button" style="background:#95a5a6; margin-top: 5px; width:100%" onclick="showSection('dashboardSection')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="reportSection">
+        <h1>Project Reports</h1>
+        <div class="pow-container">
+            <h2 class="pow-header">Program of Works: Proposed Two-Storey Residence</h2>
+            <p><strong>Location:</strong> Quezon City, Philippines</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item No.</th>
+                        <th>Scope of Works</th>
+                        <th>Estimated Cost (PHP)</th>
+                        <th>Actual Accomplishment</th>
+                        <th>Computed SWA (Value)</th>
+                        <th>% Done</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1.0</td><td>Mobilization & Temp Facilities</td>
+                        <td class="currency">₱ 45,000.00</td><td>100%</td>
+                        <td class="currency">₱ 45,000.00</td><td class="percentage">100%</td>
+                    </tr>
+                    <tr>
+                        <td>2.0</td><td>Earthworks (Excavation/Backfill)</td>
+                        <td class="currency">₱ 120,000.00</td><td>80%</td>
+                        <td class="currency">₱ 96,000.00</td><td class="percentage">80%</td>
+                    </tr>
+                    <tr>
+                        <td>3.0</td><td>Concreting & Reinforcement</td>
+                        <td class="currency">₱ 850,000.00</td><td>15%</td>
+                        <td class="currency">₱ 127,500.00</td><td class="percentage">15%</td>
+                    </tr>
+                    <tr>
+                        <td>4.0</td><td>Masonry Works</td>
+                        <td class="currency">₱ 450,000.00</td><td>0%</td>
+                        <td class="currency">₱ 0.00</td><td class="percentage">0%</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td colspan="2" style="text-align: right;">Project Totals:</td>
+                        <td class="currency">₱ 1,465,000.00</td><td>-</td>
+                        <td class="currency">₱ 268,500.00</td><td class="percentage">18.33%</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top: 30px;">
+                <p><em>*SWA (Statement of Work Accomplished) is calculated as: </em><br>
+                <code>(Estimated Cost × Actual Accomplishment %)</code></p>
+                <button onclick="window.print()" style="background:#27ae60">Print Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const DATA_RESET_VERSION = "2026-05-16-dark-checks-reset-v1";
+function resetSavedDataOnce() {
+    if (localStorage.getItem("spmsDataResetVersion") === DATA_RESET_VERSION) return;
+    [
+        "spms_projects", "formSubmissions", "activityLogs", "projectForms", "formRequests",
+        "currentProjectId", "currentProjectName", "currentFormType", "currentProjectLocation", "currentInspector",
+        "viewFormProjectId", "viewFormProjectName", "viewFormFileName", "viewFormData", "viewSubmissionId",
+        "editSubmissionId", "formMode", "editMode", "viewModeFormData"
+    ].forEach(function (key) { localStorage.removeItem(key); });
+    localStorage.setItem("spmsDataResetVersion", DATA_RESET_VERSION);
+}
+resetSavedDataOnce();
+
+function readJSON(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch (error) {
+        return fallback;
+    }
+}
+
+function writeJSON(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+let mockData = readJSON("spms_projects", []);
+const storedRole = localStorage.getItem("role") || "Project Engineer";
+const userID = localStorage.getItem("userID") || "PE1234";
+let userRoleType = "engineer";
+if (storedRole === "Inspector") userRoleType = "inspector";
+else if (storedRole === "Contractor") userRoleType = "contractor";
+
+const FORM_FILE_BY_TYPE = {
+    "Form Enclosure Request": "JCF-003.html",
+    "Finishing Work Request": "JCF-015.html",
+    "Welding Permit": "JCF-006.html",
+    "Structure Excavation Works": "JCF-001.html",
+    "Structure Excavation Works Request": "JCF-001.html",
+    "Installation of Roofing Materials Request": "JCF-007.html",
+    "Wall and Partition Work Request": "JCF-008.html",
+    "Ceiling Works Request": "JCF-009.html",
+    "Installation of Doors & Windows Request": "JCF-010.html",
+    "Electrical Work Request": "JCF-011.html",
+    "Mechanical Work Request": "JCF-012.html",
+    "Plumbing & Sanitary Work Request": "JCF-013.html",
+    "Installation of Fire Protection System": "JCF-014.html"
+};
+
+function normalizeFormType(formType) {
+    return String(formType || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function getFormFileName(formType) {
+    if (FORM_FILE_BY_TYPE[formType]) return FORM_FILE_BY_TYPE[formType];
+    const normalized = normalizeFormType(formType);
+    const match = Object.keys(FORM_FILE_BY_TYPE).find(function (key) {
+        return normalizeFormType(key) === normalized;
+    });
+    return match ? FORM_FILE_BY_TYPE[match] : "JCF-001.html";
+}
+
+function escapeHTML(value) {
+    return String(value === undefined || value === null ? "" : value).replace(/[&<>"']/g, function (char) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char];
+    });
+}
+
+function getSubmissions() {
+    return readJSON("formSubmissions", []);
+}
+
+function getProjectFormInfo(project) {
+    const submissions = getSubmissions();
+    const refs = Array.isArray(project.submittedForms) ? project.submittedForms : [];
+
+    for (let index = refs.length - 1; index >= 0; index--) {
+        const ref = refs[index];
+        let submission = null;
+        if (ref.submissionId) {
+            submission = submissions.find(function (item) { return item.id === ref.submissionId; });
+        }
+        if (!submission && ref.formType) {
+            submission = submissions.slice().reverse().find(function (item) {
+                return item.projectId === project._id && item.formType === ref.formType;
+            });
+        }
+        if (submission) {
+            return { reference: ref, submission: submission, submissionId: submission.id };
+        }
+        if (ref.submissionId) {
+            return { reference: ref, submission: null, submissionId: ref.submissionId };
+        }
+    }
+
+    const fallback = submissions.slice().reverse().find(function (item) { return item.projectId === project._id; });
+    if (fallback) return { reference: null, submission: fallback, submissionId: fallback.id };
+    return { reference: null, submission: null, submissionId: "" };
+}
+
+function getProjectFormType(project, info) {
+    return (info.submission && info.submission.formType) ||
+        (info.reference && info.reference.formType) ||
+        project.requestedFormType ||
+        (project.docs && project.docs[0]) ||
+        "Structure Excavation Works Request";
+}
+
+function getSubmissionStatus(info) {
+    return (info.submission && info.submission.status) ||
+        (info.reference && info.reference.status) ||
+        (info.submissionId ? "Submitted" : "");
+}
+
+function getSubmissionDate(info) {
+    const source = info.submission || info.reference || {};
+    return source.submittedAt || source.savedAt || source.updatedAt || "";
+}
+
+function saveAndRefresh() {
+    writeJSON("spms_projects", mockData);
+    loadProjects();
+}
+
+function refreshProjectsFromStorage() {
+    mockData = readJSON("spms_projects", []);
+    loadProjects();
+}
+window.refreshProjectsFromStorage = refreshProjectsFromStorage;
+window.saveAndRefresh = saveAndRefresh;
+
+function showSection(sectionId) {
+    document.getElementById("dashboardSection").style.display = "none";
+    document.getElementById("reportSection").style.display = "none";
+    document.getElementById("formSection").style.display = "none";
+    document.getElementById(sectionId).style.display = "block";
+}
+
+function updateRoleBadge() {
+    const badge = document.getElementById("roleBadge");
+    if (!badge) return;
+    if (userRoleType === "inspector") {
+        badge.innerText = "Inspector";
+        badge.style.background = "#8e44ad";
+    } else if (userRoleType === "contractor") {
+        badge.innerText = "Contractor";
+        badge.style.background = "#e67e22";
+    } else {
+        badge.innerText = "Project Engr";
+        badge.style.background = "#2980b9";
+    }
+}
+
+function displayGreeting() {
+    let name = "User";
+    if (userID === "PE1234") name = "Juan Dela Cruz";
+    if (userID === "INS1234") name = "Maria Santos";
+    if (userID === "CON1234") name = "Ramon Rivera";
+    document.getElementById("displayGreeting").innerHTML = "Welcome, " + escapeHTML(storedRole) + " " + escapeHTML(name);
+}
+
+function logAction(action, projectName) {
+    const logs = readJSON("activityLogs", []);
+    logs.unshift({
+        time: new Date().toLocaleString(),
+        action: action + (projectName ? " on \"" + projectName + "\"" : ""),
+        user: userID
+    });
+    writeJSON("activityLogs", logs.slice(0, 50));
+}
+
+function viewActivityLog() {
+    window.open("Activity Log.html", "_blank");
+}
+
+function applyRoleVisibility() {
+    const requestPanel = document.querySelector(".input-group");
+    if (requestPanel) requestPanel.style.display = userRoleType === "inspector" ? "block" : "none";
+}
+function renderFormActionButtons(project, info, allowEdit) {
+    if (!info.submissionId) return "";
+    let buttons = "<button style=\"background:#8e44ad; margin-left:5px;\" onclick=\"viewSubmittedForm('" + project._id + "')\">View Form</button>";
+    if (allowEdit) {
+        buttons += "<button style=\"background:#16a085; margin-left:5px;\" onclick=\"editSubmittedForm('" + project._id + "')\">Edit Form</button>";
+    }
+    return buttons;
+}
+
+function loadProjects() {
+    mockData = readJSON("spms_projects", []);
+    document.getElementById("total").innerText = mockData.length;
+    document.getElementById("ongoing").innerText = mockData.filter(function (project) { return project.status === "Ongoing"; }).length;
+    document.getElementById("completed").innerText = mockData.filter(function (project) { return project.status === "Completed"; }).length;
+
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+
+    mockData.forEach(function (project) {
+        const info = getProjectFormInfo(project);
+        const formType = getProjectFormType(project, info);
+        const formStatus = getSubmissionStatus(info);
+        const formDate = getSubmissionDate(info);
+        const hasSavedForm = Boolean(info.submissionId);
+        let actionButtons = "";
+
+        if (userRoleType === "contractor") {
+            if (project.status === "Pending") {
+                actionButtons = "<button style=\"background:#27ae60\" onclick=\"approveProject('" + project._id + "')\">Approve</button>" +
+                    "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"rejectProject('" + project._id + "')\">Reject</button>";
+            } else if (project.status === "Approved") {
+                actionButtons = "<button style=\"background:#2980b9\" onclick=\"setStatus('" + project._id + "','Ongoing')\">Start Project</button>" + renderFormActionButtons(project, info, false);
+            } else if (project.status === "Ongoing") {
+                actionButtons = "<button style=\"background:#27ae60\" onclick=\"setStatus('" + project._id + "','Completed')\">Mark Complete</button>" + renderFormActionButtons(project, info, false);
+            } else if (project.status === "Completed") {
+                actionButtons = "<span style=\"color:#27ae60;\">Completed</span>" + renderFormActionButtons(project, info, false);
+            } else {
+                actionButtons = "<span style=\"color:#7f8c8d;\">View Only</span>" + renderFormActionButtons(project, info, false);
+            }
+        } else if (userRoleType === "inspector") {
+            if (project.status === "Pending") {
+                actionButtons = "<span style=\"color:#e67e22; font-size:12px;\">Waiting for Contractor Approval</span>";
+            } else if (project.status === "Approved" || project.status === "Ongoing" || project.status === "Completed") {
+                if (hasSavedForm) {
+                    actionButtons = "<span style=\"color:#27ae60; font-size:12px;\">" + escapeHTML(formStatus || "Saved") + "</span>" + renderFormActionButtons(project, info, true);
+                } else {
+                    actionButtons = "<button style=\"background:#8e44ad\" onclick=\"fillProjectForm('" + project._id + "')\">Fill Form</button>";
+                }
+            } else {
+                actionButtons = "<span style=\"color:#7f8c8d;\">No Action Required</span>";
+            }
+        } else {
+            if (project.status === "Pending") {
+                actionButtons = "<span style=\"color:#e67e22; font-size:12px;\">Awaiting Contractor Review</span>" + renderFormActionButtons(project, info, false);
+            } else if (project.status === "Approved") {
+                actionButtons = "<span style=\"color:#27ae60; font-size:12px;\">Approved by Contractor</span>" +
+                    "<button style=\"background:#2980b9; margin-left:5px;\" onclick=\"setStatus('" + project._id + "','Ongoing')\">Start Project</button>" + renderFormActionButtons(project, info, false);
+            } else if (project.status === "Ongoing") {
+                actionButtons = "<button style=\"background:#27ae60\" onclick=\"setStatus('" + project._id + "','Completed')\">Mark Complete</button>" +
+                    "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button>" + renderFormActionButtons(project, info, false);
+            } else if (project.status === "Completed") {
+                actionButtons = "<span style=\"color:#27ae60;\">Project Completed</span>" + renderFormActionButtons(project, info, false) +
+                    "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button>";
+            } else {
+                actionButtons = renderFormActionButtons(project, info, false) + "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button>";
+            }
+        }
+
+        let progressDisplay = "<span class=\"doc-link\">" + escapeHTML(formType || "N/A") + "</span>";
+        if (hasSavedForm) {
+            progressDisplay += "<br><small style=\"font-size:10px; color:#27ae60;\">" + escapeHTML(formStatus || "Saved") + (formDate ? ": " + escapeHTML(formDate) : "") + "</small>";
+        }
+
+        let statusClass = "";
+        if (project.status === "Pending") statusClass = "pending";
+        else if (project.status === "Approved") statusClass = "approved";
+        else if (project.status === "Ongoing") statusClass = "ongoing";
+        else if (project.status === "Completed") statusClass = "completed";
+        else if (project.status === "Rejected") statusClass = "rejected";
+
+        list.innerHTML += "<tr>" +
+            "<td><strong>" + escapeHTML(project.title || "Untitled") + "</strong></td>" +
+            "<td>" + escapeHTML(project.location || "N/A") + "</td>" +
+            "<td class=\"" + statusClass + "\">" + escapeHTML(project.status || "Pending") + "</td>" +
+            "<td>" + progressDisplay + "</td>" +
+            "<td>" + actionButtons + "</td>" +
+            "</tr>";
+    });
+}
+
+function del(id) {
+    const project = mockData.find(function (item) { return item._id === id; });
+    if (!project) return;
+    if (confirm("Are you sure you want to delete \"" + project.title + "\"?")) {
+        logAction("Deleted Project", project.title);
+        mockData = mockData.filter(function (item) { return item._id !== id; });
+        saveAndRefresh();
+        alert("Project \"" + project.title + "\" has been deleted.");
+    }
+}
+
+function goToInspectorForm() {
+    const titleVal = document.getElementById("title").value.trim();
+    if (!titleVal) return alert("Project Name required");
+    document.getElementById("contractName").value = titleVal;
+    document.getElementById("inspectorID").value = userID;
+    showSection("formSection");
+}
+
+function submitInspectorForm() {
+    const title = document.getElementById("contractName").value.trim();
+    const formType = document.getElementById("formType").value;
+    if (!title) return alert("Contract Name required");
+
+    const newProject = {
+        _id: Date.now().toString(),
+        title: title,
+        location: document.getElementById("location").value.trim() || "N/A",
+        status: "Pending",
+        docs: [formType],
+        requestedFormType: formType,
+        requestedBy: userID,
+        inspectorName: document.getElementById("inspectorName").value.trim(),
+        inspectorID: document.getElementById("inspectorID").value.trim() || userID,
+        createdAt: new Date().toLocaleString(),
+        submittedForms: []
+    };
+
+    mockData.push(newProject);
+    logAction("Submitted Request for Contractor Approval", newProject.title);
+    saveAndRefresh();
+
+    document.getElementById("title").value = "";
+    document.getElementById("location").value = "";
+    document.getElementById("contractName").value = "";
+    document.getElementById("inspectorName").value = "";
+    document.getElementById("inspectorID").value = "";
+    showSection("dashboardSection");
+    alert("Request \"" + title + "\" has been submitted to Contractor for approval.");
+}
+
+function setStatus(id, newStatus) {
+    const project = mockData.find(function (item) { return item._id === id; });
+    if (!project) return;
+    logAction("Changed status from " + project.status + " to " + newStatus, project.title);
+    project.status = newStatus;
+    saveAndRefresh();
+    alert("Project \"" + project.title + "\" is now " + newStatus + ".");
+}
+
+function approveProject(id) {
+    const project = mockData.find(function (item) { return item._id === id; });
+    if (!project) return;
+    project.status = "Approved";
+    project.approvedBy = userID;
+    project.approvedAt = new Date().toLocaleString();
+    logAction("Approved form request", project.title);
+    saveAndRefresh();
+    alert("Project \"" + project.title + "\" has been approved. Inspector can now fill the form.");
+}
+
+function rejectProject(id) {
+    const project = mockData.find(function (item) { return item._id === id; });
+    if (!project) return;
+    const reason = prompt("Why are you rejecting \"" + project.title + "\"?");
+    if (!reason) return;
+    project.status = "Rejected";
+    project.rejectionReason = reason;
+    project.rejectedBy = userID;
+    project.rejectedAt = new Date().toLocaleString();
+    logAction("Rejected form request. Reason: " + reason, project.title);
+    saveAndRefresh();
+    alert("Project \"" + project.title + "\" has been rejected.");
+}
+
+function prepareFormContext(project, mode, submissionId) {
+    const info = getProjectFormInfo(project);
+    const formType = getProjectFormType(project, info);
+    localStorage.setItem("currentProjectId", project._id);
+    localStorage.setItem("currentProjectName", project.title || "");
+    localStorage.setItem("currentFormType", formType);
+    localStorage.setItem("currentProjectLocation", project.location || "");
+    localStorage.setItem("currentInspector", project.inspectorName || userID || "Inspector");
+    localStorage.setItem("formMode", mode);
+
+    if (mode === "view") {
+        localStorage.setItem("viewSubmissionId", submissionId);
+        localStorage.removeItem("editSubmissionId");
+    } else if (mode === "edit") {
+        localStorage.setItem("editSubmissionId", submissionId);
+        localStorage.removeItem("viewSubmissionId");
+    } else {
+        localStorage.removeItem("editSubmissionId");
+        localStorage.removeItem("viewSubmissionId");
+    }
+
+    return { formType: formType, fileName: getFormFileName(formType) };
+}
+
+function openProjectForm(projectId, mode) {
+    const project = mockData.find(function (item) { return item._id === projectId; });
+    if (!project) return alert("Project not found.");
+    const info = getProjectFormInfo(project);
+    if ((mode === "view" || mode === "edit") && !info.submissionId) {
+        return alert("No saved form found for this project yet.");
+    }
+
+    const prepared = prepareFormContext(project, mode, info.submissionId || "");
+    const query = "?mode=" + encodeURIComponent(mode) + (info.submissionId ? "&submissionId=" + encodeURIComponent(info.submissionId) : "");
+    window.open(prepared.fileName + query, "_blank");
+}
+
+function fillProjectForm(id) {
+    openProjectForm(id, "fill");
+}
+
+function viewSubmittedForm(projectId) {
+    openProjectForm(projectId, "view");
+}
+
+function editSubmittedForm(projectId) {
+    openProjectForm(projectId, "edit");
+}
+
+function logout() {
+    localStorage.removeItem("userID");
+    localStorage.removeItem("role");
+    window.location.replace("./Updated Login.html");
+}
+
+displayGreeting();
+updateRoleBadge();
+applyRoleVisibility();
+loadProjects();
+</script>
+<script src="storage.js"></script>
+</body>
+</html>

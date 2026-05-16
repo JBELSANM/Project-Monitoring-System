@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Request Form</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .form-container {
+        background: #fff;
+        padding: 25px;
+        border-radius: 10px;
+        width: 320px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        margin-bottom: 15px;
+        color: #1a4d8f;
+        text-align: center;
+    }
+
+    label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+    }
+
+    button {
+        width: 100%;
+        margin-top: 15px;
+        padding: 10px;
+        background: #1a4d8f;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    button:hover {
+        background: #163d70;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="form-container">
+    <h2>New Request</h2>
+
+    <form id="inspectorReqForm">
+
+        <label>Form Type</label>
+        <select id="formType">
+            <option>Form Enclosure Request</option>
+            <option>Finishing Work Request</option>
+            <option>Welding Permit</option>
+            <option>Structure Excavation Works Request</option>
+            <option>Installation of Roofing Materials Request</option>
+            <option>Wall and Partition Work Request</option>
+            <option>Ceiling Works Request</option>
+            <option>Installation of Doors & Windows Request</option>
+            <option>Electrical Work Request</option>
+            <option>Mechanical Work Request</option>
+            <option>Plumbing & Sanitary Work Request</option>
+            <option>Installation of Fire Protection System</option>
+        </select>
+
+        <label>Contract Name</label>
+        <input type="text" id="contractName" placeholder="Enter contract name">
+
+        <label>Inspector Name</label>
+        <input type="text" id="inspectorName" placeholder="Enter inspector name">
+
+        <label>Inspector ID</label>
+        <input type="text" id="inspectorID" placeholder="Enter ID">
+
+        <button type="submit">Submit Request</button>
+
+    </form>
+</div>
+<script>
+const DATA_RESET_VERSION = "2026-05-16-dark-checks-reset-v1";
+if (localStorage.getItem("spmsDataResetVersion") !== DATA_RESET_VERSION) {
+    ["spms_projects", "formSubmissions", "activityLogs", "projectForms", "formRequests", "currentProjectId", "currentProjectName", "currentFormType", "currentProjectLocation", "currentInspector", "viewSubmissionId", "editSubmissionId", "formMode", "editMode", "viewModeFormData"].forEach(function (key) { localStorage.removeItem(key); });
+    localStorage.setItem("spmsDataResetVersion", DATA_RESET_VERSION);
+}
+document.getElementById("inspectorReqForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+    const formType = document.getElementById("formType").value;
+    const contractName = document.getElementById("contractName").value.trim();
+    const inspectorName = document.getElementById("inspectorName").value.trim();
+    const inspectorID = document.getElementById("inspectorID").value.trim() || localStorage.getItem("userID") || "Inspector";
+    if (!contractName) return alert("Contract Name required");
+
+    const projects = JSON.parse(localStorage.getItem("spms_projects") || "[]");
+    projects.push({
+        _id: Date.now().toString(),
+        title: contractName,
+        location: "N/A",
+        status: "Pending",
+        docs: [formType],
+        requestedFormType: formType,
+        requestedBy: inspectorID,
+        inspectorName: inspectorName,
+        inspectorID: inspectorID,
+        createdAt: new Date().toLocaleString(),
+        submittedForms: []
+    });
+    localStorage.setItem("spms_projects", JSON.stringify(projects));
+
+    const logs = JSON.parse(localStorage.getItem("activityLogs") || "[]");
+    logs.unshift({ time: new Date().toLocaleString(), action: "Submitted Request for Contractor Approval on \"" + contractName + "\"", user: inspectorID });
+    localStorage.setItem("activityLogs", JSON.stringify(logs.slice(0, 50)));
+
+    alert("Request submitted to Contractor for approval.");
+    window.location.href = "Updated Dashboard.html";
+});
+</script>
+<script src="storage.js"></script>
+</body>
+</html>

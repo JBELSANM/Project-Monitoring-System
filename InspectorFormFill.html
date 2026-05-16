@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inspection Form</title>
+    <style>
+        body { font-family: Arial; background: #f4f7f6; padding: 40px; display: flex; justify-content: center; }
+        .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn-submit { background: #27ae60; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; cursor: pointer; margin-top: 20px; font-weight: bold; }
+        .btn-cancel { background: #95a5a6; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; cursor: pointer; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="form-card">
+    <h2 id="formHeader">Site Inspection Report</h2>
+    <p><strong>Project:</strong> <span id="projName">---</span></p>
+
+    <form id="inspectionDetails">
+        <label>Inspection Date</label>
+        <input type="date" id="inspectDate" required>
+
+        <label>Observation/Findings</label>
+        <textarea id="findings" rows="4" placeholder="Describe the site condition..."></textarea>
+
+        <label>Compliance Status</label>
+        <select id="compliance">
+            <option value="Passed">Passed (Ready for next stage)</option>
+            <option value="Minor Revisions">Minor Revisions Needed</option>
+            <option value="Failed">Failed (Action Required)</option>
+        </select>
+
+        <button type="button" class="btn-submit" onclick="submitInspection()">Submit Final Inspection</button>
+        <button type="button" class="btn-cancel" onclick="window.close()">Cancel</button>
+    </form>
+</div>
+
+<script>
+    // 1. Get the project details passed from the Dashboard
+    const projectId = localStorage.getItem("currentProjectId");
+    const projects = JSON.parse(localStorage.getItem("spms_projects")) || [];
+    const currentProject = projects.find(p => p._id === projectId);
+
+    if(currentProject) {
+        document.getElementById("projName").innerText = currentProject.title;
+    }
+
+    function submitInspection() {
+        if(!currentProject) return;
+
+        // 2. Update the project status based on inspection
+        const status = document.getElementById("compliance").value;
+        
+        // If passed, we can mark it as Ongoing or leave for Engineer to finalize
+        currentProject.status = (status === "Passed") ? "Ongoing" : "Pending Revision";
+        
+        // 3. Save back to the main list
+        localStorage.setItem("spms_projects", JSON.stringify(projects));
+
+        // 4. Log the activity (Optional: This will show up next time Dashboard is opened)
+        let logs = JSON.parse(localStorage.getItem("activityLogs")) || [];
+        logs.unshift({ 
+            time: new Date().toLocaleString(), 
+            action: `Inspection Completed: ${status} for ${currentProject.title}`,
+            user: localStorage.getItem("userID")
+        });
+        localStorage.setItem("activityLogs", JSON.stringify(logs));
+
+        alert("Inspection Submitted Successfully!");
+        window.close(); // Closes the tab and returns to dashboard
+    }
+</script>
+<script src="storage.js"></script>
+</body>
+</html>

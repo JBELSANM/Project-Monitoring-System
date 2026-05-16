@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>View Submitted Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #ecf0f1; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
+        .info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .info p { margin: 5px 0; }
+        .section { margin-top: 20px; }
+        .section-title { font-weight: bold; background: #e9ecef; padding: 8px; border-radius: 6px; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+        th { background: #f2f2f2; }
+        .checklist-row { margin-bottom: 8px; border-bottom: 1px solid #eee; padding: 6px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>📄 Submitted Form Details</h2>
+    <div id="content">Loading...</div>
+    <button onclick="window.close()" style="margin-top: 20px; padding: 8px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer;">Close</button>
+</div>
+<script>
+    const submissionId = localStorage.getItem("viewSubmissionId");
+    if (!submissionId) {
+        document.getElementById("content").innerHTML = "<p style='color:red'>No submission selected.</p>";
+    } else {
+        const allSubmissions = JSON.parse(localStorage.getItem("formSubmissions")) || [];
+        const submission = allSubmissions.find(s => s.id === submissionId);
+        if (!submission) {
+            document.getElementById("content").innerHTML = "<p style='color:red'>Form data not found.</p>";
+        } else {
+            const data = submission.formData || {};
+            const checklist = data.checklistValues || [];
+            let html = `<div class="info">
+                <p><strong>Project:</strong> ${submission.projectName || '—'}</p>
+                <p><strong>Form Type:</strong> ${submission.formType || '—'}</p>
+                <p><strong>Inspector:</strong> ${submission.inspector || '—'}</p>
+                <p><strong>Submitted:</strong> ${submission.submittedAt || '—'}</p>
+            </div>`;
+            
+            // General fields (common)
+            html += `<div class="section"><div class="section-title">General Information</div>
+            <table>
+                <tr><th width="30%">Contract Name</th><td>${data.contractNameField || ''}</td></tr>
+                <tr><th>Location</th><td>${data.locationField || ''}</td></tr>
+                <tr><th>Date Requested</th><td>${data.dateRequested || ''}</td></tr>
+                <tr><th>RFI No.</th><td>${data.rfiNo || ''}</td></tr>
+                <tr><th>Structure</th><td>${data.structure || ''}</td></tr>
+                <tr><th>Area/Floor Level</th><td>${data.areaLevel || ''}</td></tr>
+                <tr><th>Gridline</th><td>${data.gridline || ''}</td></tr>
+                <tr><th>Actual Inspection Date/Time</th><td>${data.inspectionDateTime || ''}</td></tr>
+                <tr><th>General Remarks</th><td>${data.generalRemarks || ''}</td></tr>
+            </table></div>`;
+
+            // Checklist
+            if (checklist.length) {
+                html += `<div class="section"><div class="section-title">Inspection Checklist</div>`;
+                checklist.forEach((item, idx) => {
+                    let status = '';
+                    if (item.yes) status = '✅ YES';
+                    else if (item.no) status = '❌ NO';
+                    else if (item.na) status = '⚪ N/A';
+                    else status = '—';
+                    html += `<div class="checklist-row">
+                        <strong>${idx+1}. ${item.desc}</strong><br>
+                        Compliance: ${status}<br>
+                        Remarks: ${item.remark || '—'}<br>
+                        Actions Required: ${item.action || '—'}
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // Signatures
+            html += `<div class="section"><div class="section-title">Signatures & Approval</div>
+            <table>
+                <tr><th>Prepared By (Contractor)</th><td>${data.preparedBy || ''}</td></tr>
+                <tr><th>Confirmed By (QC Engineer)</th><td>${data.confirmedBy || ''}</td></tr>
+                <tr><th>Inspected By (DepEd Inspector)</th><td>${data.inspectedBy || ''}</td></tr>
+                <tr><th>Witnessed By (Contractor)</th><td>${data.witnessedBy || ''}</td></tr>
+                <tr><th>Approved By (DepEd Project Engineer)</th><td>${data.approvedBy || ''}</td></tr>
+                <tr><th>Work Approval</th><td>${data.acceptCheck ? '✅ Accepted' : (data.rejectCheck ? '❌ Rejected' : 'Pending')}</td></tr>
+            </table></div>`;
+
+            // Distribution
+            let dist = [];
+            if (data.distContractor) dist.push('Contractor');
+            if (data.distQc) dist.push('QC Engineer');
+            if (data.distInspector) dist.push('Inspector');
+            if (data.distEngineer) dist.push('Project Engineer');
+            html += `<div class="section"><div class="section-title">Distribution</div><p>${dist.join(', ') || 'None selected'}</p></div>`;
+
+            document.getElementById("content").innerHTML = html;
+        }
+    }
+</script>
+<script src="storage.js"></script>
+</body>
+</html>

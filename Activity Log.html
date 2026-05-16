@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Activity Log</title>
+<style>
+    body {
+        font-family: Arial;
+        background: #f4f6f8;
+        padding: 30px;
+    }
+
+    h2 {
+        color: #1a4d8f;
+    }
+
+    button {
+        margin: 5px;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 5px;
+        color: white;
+        cursor: pointer;
+    }
+
+    .approve { background: green; }
+    .deny { background: red; }
+    .submit { background: #1a4d8f; }
+
+    table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+        background: white;
+    }
+
+    th, td {
+        padding: 10px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        background: #1a4d8f;
+        color: white;
+    }
+</style>
+</head>
+
+<body>
+
+<h2>Activity Log System</h2>
+<!-- TABLE -->
+<table>
+    <thead>
+        <tr>
+            <th>Date & Time</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody id="logTable"></tbody>
+</table>
+
+<script>
+    // Load existing logs
+    let logs = JSON.parse(localStorage.getItem("activityLogs")) || [];
+
+    function logAction(action) {
+        const now = new Date().toLocaleString();
+
+        const newLog = {
+            time: now,
+            action: action
+        };
+
+        logs.push(newLog);
+        localStorage.setItem("activityLogs", JSON.stringify(logs));
+
+        displayLogs();
+    }
+
+    function displayLogs() {
+        const table = document.getElementById("logTable");
+        table.innerHTML = "";
+
+        logs.forEach(log => {
+            const row = `
+                <tr>
+                    <td>${log.time}</td>
+                    <td>${log.action}</td>
+                </tr>
+            `;
+            table.innerHTML += row;
+        });
+    }
+
+    // Load logs on page start
+    displayLogs();
+</script>
+<script src="storage.js"></script>
+</body>
+</html>
