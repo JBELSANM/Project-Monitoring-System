@@ -49,11 +49,14 @@
         .pow-container { margin-bottom: 28px; overflow-x: auto; }
         .pow-meta { margin: 4px 0 18px; color: #34495e; }
         .pow-input { width: 130px; max-width: 100%; margin: 0; padding: 7px; border: 1px solid #bfc9d4; border-radius: 4px; box-sizing: border-box; text-align: right; }
+        .pow-scope-input { width: 100%; min-width: 220px; margin: 0; padding: 7px; border: 1px solid #bfc9d4; border-radius: 4px; box-sizing: border-box; }
+        .pow-scope-input:focus { outline: 2px solid #9bd1f5; border-color: #3498db; }
         .pow-input:focus { outline: 2px solid #9bd1f5; border-color: #3498db; }
         .pow-actions { margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         .pow-actions button { margin: 0; }
         .pow-edit-btn { background: #2980b9; }
         .pow-save-btn { background: #27ae60; }
+        .pow-add-btn { background: #8e44ad; }
         .pow-print-btn { background: #607d8b; }
         .pow-status { font-size: 12px; color: #607d8b; margin-left: 6px; }
         .pow-readonly { color: #555; font-size: 12px; margin-top: 10px; }
@@ -389,47 +392,6 @@ function isPowEligible(project) {
         getProjectRequests(project).some(function (request) { return request.status === "Approved"; });
 }
 
-function getApprovedScopeItems(project) {
-    const items = [];
-    getProjectRequests(project).forEach(function (request, index) {
-        if (request.status === "Approved") {
-            items.push({
-                requestId: request.requestId,
-                scopeOfWorks: request.formType || "Approved Scope of Work",
-                approvedAt: request.approvedAt || "",
-                requestedAt: request.requestedAt || "",
-                sequence: index + 1
-            });
-        }
-    });
-
-    if (!items.length && Array.isArray(project.approvedScopes)) {
-        project.approvedScopes.forEach(function (scope, index) {
-            if (scope) {
-                items.push({
-                    requestId: "legacy-approved-" + (index + 1),
-                    scopeOfWorks: scope,
-                    approvedAt: project.approvedAt || "",
-                    requestedAt: project.createdAt || "",
-                    sequence: index + 1
-                });
-            }
-        });
-    }
-
-    if (!items.length && project.approvedScopeOfWork) {
-        items.push({
-            requestId: "legacy-approved-1",
-            scopeOfWorks: project.approvedScopeOfWork,
-            approvedAt: project.approvedAt || "",
-            requestedAt: project.createdAt || "",
-            sequence: 1
-        });
-    }
-
-    return items;
-}
-
 function ensureProgramOfWorks(project) {
     if (!isPowEligible(project)) return false;
     let changed = false;
@@ -442,42 +404,13 @@ function ensureProgramOfWorks(project) {
         changed = true;
     }
 
-    const approvedItems = getApprovedScopeItems(project);
-    approvedItems.forEach(function (approvedItem) {
-        let existing = project.programOfWorks.items.find(function (item) {
-            return item.sourceRequestId && item.sourceRequestId === approvedItem.requestId;
-        });
-        if (!existing) {
-            existing = project.programOfWorks.items.find(function (item) {
-                return !item.sourceRequestId && item.scopeOfWorks === approvedItem.scopeOfWorks;
-            });
-        }
-        if (!existing) {
-            project.programOfWorks.items.push({
-                itemNo: "",
-                sourceRequestId: approvedItem.requestId,
-                scopeOfWorks: approvedItem.scopeOfWorks,
-                approvedAt: approvedItem.approvedAt,
-                requestedAt: approvedItem.requestedAt,
-                estimatedCost: "",
-                actualAccomplishment: ""
-            });
-            changed = true;
-        } else {
-            if (existing.sourceRequestId !== approvedItem.requestId) {
-                existing.sourceRequestId = approvedItem.requestId;
-                changed = true;
-            }
-            if (existing.scopeOfWorks !== approvedItem.scopeOfWorks) {
-                existing.scopeOfWorks = approvedItem.scopeOfWorks;
-                changed = true;
-            }
-            if (existing.approvedAt !== approvedItem.approvedAt) {
-                existing.approvedAt = approvedItem.approvedAt;
-                changed = true;
-            }
-        }
+    const manualItems = project.programOfWorks.items.filter(function (item) {
+        return !item.sourceRequestId;
     });
+    if (manualItems.length !== project.programOfWorks.items.length) {
+        project.programOfWorks.items = manualItems;
+        changed = true;
+    }
 
     project.programOfWorks.items.forEach(function (item, index) {
         const expectedItemNo = (index + 1) + ".0";
@@ -485,6 +418,7 @@ function ensureProgramOfWorks(project) {
             item.itemNo = expectedItemNo;
             changed = true;
         }
+        if (item.scopeOfWorks === undefined) item.scopeOfWorks = "";
         if (item.estimatedCost === undefined) item.estimatedCost = "";
         if (item.actualAccomplishment === undefined) item.actualAccomplishment = "";
     });
@@ -534,6 +468,13 @@ function renderPowValueInput(projectId, index, field, value, suffix) {
     return "<input class=\"pow-input\" type=\"number\" min=\"0\"" + maxAttr + " step=\"" + step + "\" value=\"" + safeValue + "\" data-pow-project=\"" + projectId + "\" data-pow-index=\"" + index + "\" data-pow-field=\"" + field + "\" oninput=\"previewPowCalculations('" + projectId + "')\">" + (suffix || "");
 }
 
+function renderPowScopeInput(projectId, index, value) {
+    const editing = isProgramOfWorksEditing(projectId);
+    if (!editing) return escapeHTML(value || "Not yet added");
+    const safeValue = value === undefined || value === null ? "" : escapeHTML(value);
+    return "<input class=\"pow-scope-input\" type=\"text\" value=\"" + safeValue + "\" data-pow-project=\"" + projectId + "\" data-pow-index=\"" + index + "\" data-pow-field=\"scopeOfWorks\" placeholder=\"Scope of Works\">";
+}
+
 function renderProgramOfWorks(project) {
     ensureProgramOfWorks(project);
     const items = project.programOfWorks.items;
@@ -550,13 +491,16 @@ function renderProgramOfWorks(project) {
         totalSwa += swa;
         rows += "<tr>" +
             "<td>" + escapeHTML(item.itemNo || ((index + 1) + ".0")) + "</td>" +
-            "<td>" + escapeHTML(item.scopeOfWorks || "Approved Scope of Work") + "</td>" +
+            "<td>" + renderPowScopeInput(project._id, index, item.scopeOfWorks) + "</td>" +
             "<td class=\"currency\">" + renderPowValueInput(project._id, index, "estimatedCost", item.estimatedCost, "") + "</td>" +
             "<td>" + renderPowValueInput(project._id, index, "actualAccomplishment", item.actualAccomplishment, "%") + "</td>" +
             "<td class=\"currency\" id=\"pow-swa-" + project._id + "-" + index + "\">" + formatCurrency(swa) + "</td>" +
             "<td class=\"percentage\" id=\"pow-percent-" + project._id + "-" + index + "\">" + formatPercent(accomplishment) + "</td>" +
             "</tr>";
     });
+    if (!items.length) {
+        rows = "<tr><td colspan=\"6\" style=\"text-align:center;color:#7f8c8d;\">No scope of works added yet.</td></tr>";
+    }
 
     const totalPercent = totalEstimated ? (totalSwa / totalEstimated) * 100 : 0;
     rows += "<tr class=\"total-row\">" +
@@ -570,8 +514,9 @@ function renderProgramOfWorks(project) {
     let actions = "";
     if (canEditProgramOfWorks()) {
         if (editing) {
-            actions = "<button class=\"pow-save-btn\" onclick=\"saveProgramOfWorks('" + project._id + "')\">Save Program of Works</button>" +
-                "<span class=\"pow-status\">Editing mode: fill Estimated Cost and Actual Accomplishment, then save.</span>";
+            actions = "<button class=\"pow-add-btn\" onclick=\"addProgramOfWorksItem('" + project._id + "')\">Add Item</button>" +
+                "<button class=\"pow-save-btn\" onclick=\"saveProgramOfWorks('" + project._id + "')\">Save Program of Works</button>" +
+                "<span class=\"pow-status\">Editing mode: add Scope of Works items and fill Estimated Cost and Actual Accomplishment, then save.</span>";
         } else {
             actions = "<button class=\"pow-edit-btn\" onclick=\"editProgramOfWorks('" + project._id + "')\">Edit Program of Works</button>" +
                 "<button class=\"pow-print-btn\" onclick=\"window.print()\">Print Report</button>";
@@ -596,24 +541,43 @@ function loadReports() {
     if (!reportsList || !note) return;
 
     note.innerHTML = canEditProgramOfWorks()
-        ? "Project Engineer access: click Edit Program of Works to fill Estimated Cost and Actual Accomplishment, then Save. SWA, % Done, and Project Totals calculate automatically."
+        ? "Project Engineer access: click Edit Program of Works to add Scope of Works items, fill Estimated Cost and Actual Accomplishment, then Save. SWA, % Done, and Project Totals calculate automatically."
         : "View-only access: Program of Works values can only be edited by the Project Engineer.";
 
     const reportProjects = mockData.filter(function (project) {
-        return isPowEligible(project) && project.programOfWorks && project.programOfWorks.items && project.programOfWorks.items.length;
+        return isPowEligible(project) && project.programOfWorks;
     });
 
     if (!reportProjects.length) {
-        reportsList.innerHTML = "<div class=\"empty-report\">No Program of Works yet. A report is created automatically after the Inspector approves a contractor's requested scope of work.</div>";
+        reportsList.innerHTML = "<div class=\"empty-report\">No Program of Works yet. A report is created automatically after the Inspector approves a contractor's requested form.</div>";
         return;
     }
 
     reportsList.innerHTML = reportProjects.map(renderProgramOfWorks).join("");
 }
 
+function powInputElement(projectId, index, field) {
+    return document.querySelector("input[data-pow-project='" + projectId + "'][data-pow-index='" + index + "'][data-pow-field='" + field + "']");
+}
+
 function powInputValue(projectId, index, field) {
-    const input = document.querySelector("input[data-pow-project='" + projectId + "'][data-pow-index='" + index + "'][data-pow-field='" + field + "']");
+    const input = powInputElement(projectId, index, field);
     return input ? input.value : "";
+}
+
+function captureProgramOfWorksInputs(projectId) {
+    const project = mockData.find(function (item) { return item._id === projectId; });
+    if (!project) return null;
+    ensureProgramOfWorks(project);
+    project.programOfWorks.items.forEach(function (item, index) {
+        const scopeInput = powInputElement(projectId, index, "scopeOfWorks");
+        const estimatedInput = powInputElement(projectId, index, "estimatedCost");
+        const accomplishmentInput = powInputElement(projectId, index, "actualAccomplishment");
+        if (scopeInput) item.scopeOfWorks = scopeInput.value.trim();
+        if (estimatedInput) item.estimatedCost = estimatedInput.value === "" ? "" : parseAmount(estimatedInput.value).toString();
+        if (accomplishmentInput) item.actualAccomplishment = accomplishmentInput.value === "" ? "" : parsePercent(accomplishmentInput.value).toString();
+    });
+    return project;
 }
 
 function previewPowCalculations(projectId) {
@@ -650,18 +614,31 @@ function editProgramOfWorks(projectId) {
     loadReports();
 }
 
+function addProgramOfWorksItem(projectId) {
+    if (!canEditProgramOfWorks()) return alert("Only the Project Engineer can edit the Program of Works.");
+    const project = captureProgramOfWorksInputs(projectId);
+    if (!project) return;
+    const nextItemNo = (project.programOfWorks.items.length + 1) + ".0";
+    project.programOfWorks.items.push({
+        itemNo: nextItemNo,
+        scopeOfWorks: "",
+        estimatedCost: "",
+        actualAccomplishment: "",
+        createdAt: new Date().toLocaleString(),
+        createdBy: userID
+    });
+    activePowEditProjectId = projectId;
+    loadReports();
+}
+
 function saveProgramOfWorks(projectId) {
     if (!canEditProgramOfWorks()) return alert("Only the Project Engineer can edit the Program of Works.");
-    const project = mockData.find(function (item) { return item._id === projectId; });
+    const project = captureProgramOfWorksInputs(projectId);
     if (!project) return;
-    ensureProgramOfWorks(project);
-
-    project.programOfWorks.items.forEach(function (item, index) {
-        const estimatedValue = powInputValue(projectId, index, "estimatedCost");
-        const accomplishmentValue = powInputValue(projectId, index, "actualAccomplishment");
-        item.estimatedCost = estimatedValue === "" ? "" : parseAmount(estimatedValue).toString();
-        item.actualAccomplishment = accomplishmentValue === "" ? "" : parsePercent(accomplishmentValue).toString();
+    project.programOfWorks.items = project.programOfWorks.items.filter(function (item) {
+        return item.scopeOfWorks || item.estimatedCost !== "" || item.actualAccomplishment !== "";
     });
+    ensureProgramOfWorks(project);
     project.programOfWorks.updatedAt = new Date().toLocaleString();
     project.programOfWorks.updatedBy = userID;
     activePowEditProjectId = "";
@@ -1008,9 +985,6 @@ function approveFormRequest(id, requestId) {
     request.status = "Approved";
     request.approvedByInspector = userID;
     request.approvedAt = new Date().toLocaleString();
-    project.approvedScopeOfWork = request.formType;
-    project.approvedScopes = Array.isArray(project.approvedScopes) ? project.approvedScopes : [];
-    project.approvedScopes.push(request.formType);
     updateProjectStatusAfterRequestReview(project);
     ensureProgramOfWorks(project);
     project.approvedByInspector = userID;
