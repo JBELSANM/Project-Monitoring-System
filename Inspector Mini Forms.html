@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Request Form</title>
+<title>Contractor Form Request</title>
 
 <style>
     body {
@@ -66,9 +66,9 @@
 <body>
 
 <div class="form-container">
-    <h2>New Request</h2>
+    <h2>Contractor Request</h2>
 
-    <form id="inspectorReqForm">
+    <form id="contractorReqForm">
 
         <label>Form Type</label>
         <select id="formType">
@@ -89,28 +89,28 @@
         <label>Contract Name</label>
         <input type="text" id="contractName" placeholder="Enter contract name">
 
-        <label>Inspector Name</label>
-        <input type="text" id="inspectorName" placeholder="Enter inspector name">
+        <label>Contractor Name</label>
+        <input type="text" id="contractorName" placeholder="Enter contractor name">
 
-        <label>Inspector ID</label>
-        <input type="text" id="inspectorID" placeholder="Enter ID">
+        <label>Contractor ID</label>
+        <input type="text" id="contractorID" placeholder="Enter ID">
 
         <button type="submit">Submit Request</button>
 
     </form>
 </div>
 <script>
-const DATA_RESET_VERSION = "2026-05-16-dark-checks-reset-v1";
+const DATA_RESET_VERSION = "2026-05-24-contractor-request-flow-v1";
 if (localStorage.getItem("spmsDataResetVersion") !== DATA_RESET_VERSION) {
     ["spms_projects", "formSubmissions", "activityLogs", "projectForms", "formRequests", "currentProjectId", "currentProjectName", "currentFormType", "currentProjectLocation", "currentInspector", "viewSubmissionId", "editSubmissionId", "formMode", "editMode", "viewModeFormData"].forEach(function (key) { localStorage.removeItem(key); });
     localStorage.setItem("spmsDataResetVersion", DATA_RESET_VERSION);
 }
-document.getElementById("inspectorReqForm").addEventListener("submit", function (event) {
+document.getElementById("contractorReqForm").addEventListener("submit", function (event) {
     event.preventDefault();
     const formType = document.getElementById("formType").value;
     const contractName = document.getElementById("contractName").value.trim();
-    const inspectorName = document.getElementById("inspectorName").value.trim();
-    const inspectorID = document.getElementById("inspectorID").value.trim() || localStorage.getItem("userID") || "Inspector";
+    const contractorName = document.getElementById("contractorName").value.trim();
+    const contractorID = document.getElementById("contractorID").value.trim() || localStorage.getItem("userID") || "Contractor";
     if (!contractName) return alert("Contract Name required");
 
     const projects = JSON.parse(localStorage.getItem("spms_projects") || "[]");
@@ -121,19 +121,19 @@ document.getElementById("inspectorReqForm").addEventListener("submit", function 
         status: "Pending",
         docs: [formType],
         requestedFormType: formType,
-        requestedBy: inspectorID,
-        inspectorName: inspectorName,
-        inspectorID: inspectorID,
+        requestedBy: contractorID,
+        contractorName: contractorName,
+        contractorID: contractorID,
         createdAt: new Date().toLocaleString(),
         submittedForms: []
     });
     localStorage.setItem("spms_projects", JSON.stringify(projects));
 
     const logs = JSON.parse(localStorage.getItem("activityLogs") || "[]");
-    logs.unshift({ time: new Date().toLocaleString(), action: "Submitted Request for Contractor Approval on \"" + contractName + "\"", user: inspectorID });
+    logs.unshift({ time: new Date().toLocaleString(), action: "Submitted Request for Inspector Approval on \"" + contractName + "\"", user: contractorID });
     localStorage.setItem("activityLogs", JSON.stringify(logs.slice(0, 50)));
 
-    alert("Request submitted to Contractor for approval.");
+    alert("Request submitted to Inspector for approval.");
     window.location.href = "Updated Dashboard.html";
 });
 </script>

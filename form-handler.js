@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const DATA_RESET_VERSION = "2026-05-16-dark-checks-reset-v1";
+    const DATA_RESET_VERSION = "2026-05-24-contractor-request-flow-v1";
     function resetSavedDataOnce() {
         if (localStorage.getItem("spmsDataResetVersion") === DATA_RESET_VERSION) return;
         [

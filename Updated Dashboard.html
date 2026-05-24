@@ -45,6 +45,19 @@
         .currency { text-align: right; font-family: 'Courier New', Courier, monospace; }
         .percentage { text-align: center; font-weight: bold; color: #27ae60; }
         .total-row { background-color: #ecf0f1 !important; font-weight: bold; }
+        .reports-note { background: #fff; border-left: 4px solid #3498db; padding: 12px 15px; margin-bottom: 18px; color: #34495e; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .pow-container { margin-bottom: 28px; overflow-x: auto; }
+        .pow-meta { margin: 4px 0 18px; color: #34495e; }
+        .pow-input { width: 130px; max-width: 100%; margin: 0; padding: 7px; border: 1px solid #bfc9d4; border-radius: 4px; box-sizing: border-box; text-align: right; }
+        .pow-input:focus { outline: 2px solid #9bd1f5; border-color: #3498db; }
+        .pow-actions { margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .pow-actions button { margin: 0; }
+        .pow-edit-btn { background: #2980b9; }
+        .pow-save-btn { background: #27ae60; }
+        .pow-print-btn { background: #607d8b; }
+        .pow-status { font-size: 12px; color: #607d8b; margin-left: 6px; }
+        .pow-readonly { color: #555; font-size: 12px; margin-top: 10px; }
+        .empty-report { background: #fff; border-radius: 8px; padding: 24px; color: #7f8c8d; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 
         .approved { color: #27ae60; font-weight: bold; }
         .pending { color: #e67e22; font-weight: bold; }
@@ -75,7 +88,7 @@
         </div>
 
         <div class="input-group">
-            <h3>Add New Project</h3>
+            <h3>Request Form for Inspector Approval</h3>
             <input id="title" placeholder="Project Name">
             <input id="location" list="locationList" placeholder="Select or type location">
             <datalist id="locationList">
@@ -85,7 +98,7 @@
                 <option value="NAGA CITY"><option value="SORSOGON"><option value="SORSOGON CITY">
                 <option value="TABACO CITY">
             </datalist>
-            <button onclick="goToInspectorForm()">Create Form</button>
+            <button onclick="goToContractorRequestForm()">Request Form</button>
         </div>
 
         <table>
@@ -104,8 +117,8 @@
 
     <div id="formSection">
         <div class="form-container">
-            <h2 class="form-header">New Request</h2>
-            <form id="inspectorReqForm">
+            <h2 class="form-header">Contractor Form Request</h2>
+            <form id="contractorReqForm">
                 <label>Form Type</label>
                 <select id="formType">
                     <option>Form Enclosure Request</option>
@@ -125,13 +138,13 @@
                 <label>Contract Name</label>
                 <input type="text" id="contractName" placeholder="Enter contract name">
 
-                <label>Inspector Name</label>
-                <input type="text" id="inspectorName" placeholder="Enter inspector name">
+                <label>Contractor Name</label>
+                <input type="text" id="contractorName" placeholder="Enter contractor name">
 
-                <label>Inspector ID</label>
-                <input type="text" id="inspectorID" placeholder="Enter ID">
+                <label>Contractor ID</label>
+                <input type="text" id="contractorID" placeholder="Enter ID">
 
-                <button type="button" class="submit-btn" onclick="submitInspectorForm()">Submit Request</button>
+                <button type="button" class="submit-btn" onclick="submitContractorRequest()">Submit Request</button>
                 <button type="button" style="background:#95a5a6; margin-top: 5px; width:100%" onclick="showSection('dashboardSection')">Cancel</button>
             </form>
         </div>
@@ -139,60 +152,13 @@
 
     <div id="reportSection">
         <h1>Project Reports</h1>
-        <div class="pow-container">
-            <h2 class="pow-header">Program of Works: Proposed Two-Storey Residence</h2>
-            <p><strong>Location:</strong> Quezon City, Philippines</p>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Item No.</th>
-                        <th>Scope of Works</th>
-                        <th>Estimated Cost (PHP)</th>
-                        <th>Actual Accomplishment</th>
-                        <th>Computed SWA (Value)</th>
-                        <th>% Done</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1.0</td><td>Mobilization & Temp Facilities</td>
-                        <td class="currency">₱ 45,000.00</td><td>100%</td>
-                        <td class="currency">₱ 45,000.00</td><td class="percentage">100%</td>
-                    </tr>
-                    <tr>
-                        <td>2.0</td><td>Earthworks (Excavation/Backfill)</td>
-                        <td class="currency">₱ 120,000.00</td><td>80%</td>
-                        <td class="currency">₱ 96,000.00</td><td class="percentage">80%</td>
-                    </tr>
-                    <tr>
-                        <td>3.0</td><td>Concreting & Reinforcement</td>
-                        <td class="currency">₱ 850,000.00</td><td>15%</td>
-                        <td class="currency">₱ 127,500.00</td><td class="percentage">15%</td>
-                    </tr>
-                    <tr>
-                        <td>4.0</td><td>Masonry Works</td>
-                        <td class="currency">₱ 450,000.00</td><td>0%</td>
-                        <td class="currency">₱ 0.00</td><td class="percentage">0%</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td colspan="2" style="text-align: right;">Project Totals:</td>
-                        <td class="currency">₱ 1,465,000.00</td><td>-</td>
-                        <td class="currency">₱ 268,500.00</td><td class="percentage">18.33%</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div style="margin-top: 30px;">
-                <p><em>*SWA (Statement of Work Accomplished) is calculated as: </em><br>
-                <code>(Estimated Cost × Actual Accomplishment %)</code></p>
-                <button onclick="window.print()" style="background:#27ae60">Print Report</button>
-            </div>
-        </div>
+        <div class="reports-note" id="reportsAccessNote"></div>
+        <div id="reportsList"></div>
     </div>
 </div>
 
 <script>
-const DATA_RESET_VERSION = "2026-05-16-dark-checks-reset-v1";
+const DATA_RESET_VERSION = "2026-05-24-contractor-request-flow-v1";
 function resetSavedDataOnce() {
     if (localStorage.getItem("spmsDataResetVersion") === DATA_RESET_VERSION) return;
     [
@@ -224,6 +190,7 @@ const userID = localStorage.getItem("userID") || "PE1234";
 let userRoleType = "engineer";
 if (storedRole === "Inspector") userRoleType = "inspector";
 else if (storedRole === "Contractor") userRoleType = "contractor";
+let activePowEditProjectId = "";
 
 const FORM_FILE_BY_TYPE = {
     "Form Enclosure Request": "JCF-003.html",
@@ -311,14 +278,260 @@ function getSubmissionDate(info) {
     return source.submittedAt || source.savedAt || source.updatedAt || "";
 }
 
+
+function canEditProgramOfWorks() {
+    return userRoleType === "engineer";
+}
+
+function isPowEligible(project) {
+    return ["Approved", "Ongoing", "Completed"].indexOf(project.status) !== -1;
+}
+
+function getApprovedScopes(project) {
+    const scopes = [];
+    if (Array.isArray(project.approvedScopes)) {
+        project.approvedScopes.forEach(function (scope) { if (scope) scopes.push(scope); });
+    }
+    if (project.approvedScopeOfWork) scopes.push(project.approvedScopeOfWork);
+    if (project.requestedFormType) scopes.push(project.requestedFormType);
+    if (Array.isArray(project.docs)) {
+        project.docs.forEach(function (scope) { if (scope) scopes.push(scope); });
+    }
+    const unique = [];
+    scopes.forEach(function (scope) {
+        if (unique.indexOf(scope) === -1) unique.push(scope);
+    });
+    return unique.length ? unique : ["Approved Scope of Work"];
+}
+
+function ensureProgramOfWorks(project) {
+    if (!isPowEligible(project)) return false;
+    let changed = false;
+    if (!project.programOfWorks) {
+        project.programOfWorks = { createdAt: new Date().toLocaleString(), items: [] };
+        changed = true;
+    }
+    if (!Array.isArray(project.programOfWorks.items)) {
+        project.programOfWorks.items = [];
+        changed = true;
+    }
+
+    const scopes = getApprovedScopes(project);
+    scopes.forEach(function (scope) {
+        const existing = project.programOfWorks.items.find(function (item) { return item.scopeOfWorks === scope; });
+        if (!existing) {
+            project.programOfWorks.items.push({
+                itemNo: "",
+                scopeOfWorks: scope,
+                estimatedCost: "",
+                actualAccomplishment: ""
+            });
+            changed = true;
+        }
+    });
+
+    project.programOfWorks.items.forEach(function (item, index) {
+        const expectedItemNo = (index + 1) + ".0";
+        if (item.itemNo !== expectedItemNo) {
+            item.itemNo = expectedItemNo;
+            changed = true;
+        }
+        if (item.estimatedCost === undefined) item.estimatedCost = "";
+        if (item.actualAccomplishment === undefined) item.actualAccomplishment = "";
+    });
+    return changed;
+}
+
+function syncProgramOfWorks() {
+    let changed = false;
+    mockData.forEach(function (project) {
+        if (ensureProgramOfWorks(project)) changed = true;
+    });
+    if (changed) writeJSON("spms_projects", mockData);
+}
+
+function parseAmount(value) {
+    const parsed = parseFloat(String(value || "").replace(/[^0-9.-]/g, ""));
+    return isNaN(parsed) ? 0 : Math.max(0, parsed);
+}
+
+function parsePercent(value) {
+    const parsed = parseFloat(String(value || "").replace(/[^0-9.-]/g, ""));
+    if (isNaN(parsed)) return 0;
+    return Math.max(0, Math.min(100, parsed));
+}
+
+function formatCurrency(value) {
+    return "₱ " + parseAmount(value).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatPercent(value) {
+    const percent = parsePercent(value);
+    return percent.toLocaleString("en-PH", { minimumFractionDigits: percent % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 }) + "%";
+}
+
+function isProgramOfWorksEditing(projectId) {
+    return canEditProgramOfWorks() && activePowEditProjectId === projectId;
+}
+
+function renderPowValueInput(projectId, index, field, value, suffix) {
+    const editing = isProgramOfWorksEditing(projectId);
+    if (!editing) {
+        return field === "estimatedCost" ? formatCurrency(value) : formatPercent(value);
+    }
+    const maxAttr = field === "actualAccomplishment" ? " max=\"100\"" : "";
+    const step = field === "estimatedCost" ? "0.01" : "0.01";
+    const safeValue = value === undefined || value === null ? "" : escapeHTML(value);
+    return "<input class=\"pow-input\" type=\"number\" min=\"0\"" + maxAttr + " step=\"" + step + "\" value=\"" + safeValue + "\" data-pow-project=\"" + projectId + "\" data-pow-index=\"" + index + "\" data-pow-field=\"" + field + "\" oninput=\"previewPowCalculations('" + projectId + "')\">" + (suffix || "");
+}
+
+function renderProgramOfWorks(project) {
+    ensureProgramOfWorks(project);
+    const items = project.programOfWorks.items;
+    const editing = isProgramOfWorksEditing(project._id);
+    let totalEstimated = 0;
+    let totalSwa = 0;
+    let rows = "";
+
+    items.forEach(function (item, index) {
+        const estimated = parseAmount(item.estimatedCost);
+        const accomplishment = parsePercent(item.actualAccomplishment);
+        const swa = estimated * (accomplishment / 100);
+        totalEstimated += estimated;
+        totalSwa += swa;
+        rows += "<tr>" +
+            "<td>" + escapeHTML(item.itemNo || ((index + 1) + ".0")) + "</td>" +
+            "<td>" + escapeHTML(item.scopeOfWorks || "Approved Scope of Work") + "</td>" +
+            "<td class=\"currency\">" + renderPowValueInput(project._id, index, "estimatedCost", item.estimatedCost, "") + "</td>" +
+            "<td>" + renderPowValueInput(project._id, index, "actualAccomplishment", item.actualAccomplishment, "%") + "</td>" +
+            "<td class=\"currency\" id=\"pow-swa-" + project._id + "-" + index + "\">" + formatCurrency(swa) + "</td>" +
+            "<td class=\"percentage\" id=\"pow-percent-" + project._id + "-" + index + "\">" + formatPercent(accomplishment) + "</td>" +
+            "</tr>";
+    });
+
+    const totalPercent = totalEstimated ? (totalSwa / totalEstimated) * 100 : 0;
+    rows += "<tr class=\"total-row\">" +
+        "<td colspan=\"2\" style=\"text-align:right;\">Project Totals:</td>" +
+        "<td class=\"currency\" id=\"pow-total-estimated-" + project._id + "\">" + formatCurrency(totalEstimated) + "</td>" +
+        "<td>-</td>" +
+        "<td class=\"currency\" id=\"pow-total-swa-" + project._id + "\">" + formatCurrency(totalSwa) + "</td>" +
+        "<td class=\"percentage\" id=\"pow-total-percent-" + project._id + "\">" + formatPercent(totalPercent) + "</td>" +
+        "</tr>";
+
+    let actions = "";
+    if (canEditProgramOfWorks()) {
+        if (editing) {
+            actions = "<button class=\"pow-save-btn\" onclick=\"saveProgramOfWorks('" + project._id + "')\">Save Program of Works</button>" +
+                "<span class=\"pow-status\">Editing mode: fill Estimated Cost and Actual Accomplishment, then save.</span>";
+        } else {
+            actions = "<button class=\"pow-edit-btn\" onclick=\"editProgramOfWorks('" + project._id + "')\">Edit Program of Works</button>" +
+                "<button class=\"pow-print-btn\" onclick=\"window.print()\">Print Report</button>";
+        }
+    }
+
+    return "<div class=\"pow-container\" data-pow-project=\"" + project._id + "\">" +
+        "<h2 class=\"pow-header\">Program of Works: " + escapeHTML(project.title || "Untitled Project") + "</h2>" +
+        "<p class=\"pow-meta\"><strong>Location:</strong> " + escapeHTML(project.location || "N/A") + "</p>" +
+        "<table><thead><tr>" +
+        "<th>Item No.</th><th>Scope of Works</th><th>Estimated Cost (PHP)</th><th>Actual Accomplishment</th><th>Computed SWA (Value)</th><th>% Done</th>" +
+        "</tr></thead><tbody>" + rows + "</tbody></table>" +
+        "<div class=\"pow-readonly\"><em>SWA (Statement of Work Accomplished) = Estimated Cost × Actual Accomplishment %. Project total % Done is weighted by estimated cost.</em></div>" +
+        (actions ? "<div class=\"pow-actions\">" + actions + "</div>" : "") +
+        "</div>";
+}
+
+function loadReports() {
+    syncProgramOfWorks();
+    const reportsList = document.getElementById("reportsList");
+    const note = document.getElementById("reportsAccessNote");
+    if (!reportsList || !note) return;
+
+    note.innerHTML = canEditProgramOfWorks()
+        ? "Project Engineer access: click Edit Program of Works to fill Estimated Cost and Actual Accomplishment, then Save. SWA, % Done, and Project Totals calculate automatically."
+        : "View-only access: Program of Works values can only be edited by the Project Engineer.";
+
+    const reportProjects = mockData.filter(function (project) {
+        return isPowEligible(project) && project.programOfWorks && project.programOfWorks.items && project.programOfWorks.items.length;
+    });
+
+    if (!reportProjects.length) {
+        reportsList.innerHTML = "<div class=\"empty-report\">No Program of Works yet. A report is created automatically after the Inspector approves a contractor's requested scope of work.</div>";
+        return;
+    }
+
+    reportsList.innerHTML = reportProjects.map(renderProgramOfWorks).join("");
+}
+
+function powInputValue(projectId, index, field) {
+    const input = document.querySelector("input[data-pow-project='" + projectId + "'][data-pow-index='" + index + "'][data-pow-field='" + field + "']");
+    return input ? input.value : "";
+}
+
+function previewPowCalculations(projectId) {
+    const project = mockData.find(function (item) { return item._id === projectId; });
+    if (!project || !project.programOfWorks) return;
+    let totalEstimated = 0;
+    let totalSwa = 0;
+
+    project.programOfWorks.items.forEach(function (item, index) {
+        const estimated = parseAmount(powInputValue(projectId, index, "estimatedCost"));
+        const accomplishment = parsePercent(powInputValue(projectId, index, "actualAccomplishment"));
+        const swa = estimated * (accomplishment / 100);
+        totalEstimated += estimated;
+        totalSwa += swa;
+
+        const swaCell = document.getElementById("pow-swa-" + projectId + "-" + index);
+        const percentCell = document.getElementById("pow-percent-" + projectId + "-" + index);
+        if (swaCell) swaCell.innerText = formatCurrency(swa);
+        if (percentCell) percentCell.innerText = formatPercent(accomplishment);
+    });
+
+    const totalPercent = totalEstimated ? (totalSwa / totalEstimated) * 100 : 0;
+    const totalEstimatedCell = document.getElementById("pow-total-estimated-" + projectId);
+    const totalSwaCell = document.getElementById("pow-total-swa-" + projectId);
+    const totalPercentCell = document.getElementById("pow-total-percent-" + projectId);
+    if (totalEstimatedCell) totalEstimatedCell.innerText = formatCurrency(totalEstimated);
+    if (totalSwaCell) totalSwaCell.innerText = formatCurrency(totalSwa);
+    if (totalPercentCell) totalPercentCell.innerText = formatPercent(totalPercent);
+}
+
+function editProgramOfWorks(projectId) {
+    if (!canEditProgramOfWorks()) return alert("Only the Project Engineer can edit the Program of Works.");
+    activePowEditProjectId = projectId;
+    loadReports();
+}
+
+function saveProgramOfWorks(projectId) {
+    if (!canEditProgramOfWorks()) return alert("Only the Project Engineer can edit the Program of Works.");
+    const project = mockData.find(function (item) { return item._id === projectId; });
+    if (!project) return;
+    ensureProgramOfWorks(project);
+
+    project.programOfWorks.items.forEach(function (item, index) {
+        const estimatedValue = powInputValue(projectId, index, "estimatedCost");
+        const accomplishmentValue = powInputValue(projectId, index, "actualAccomplishment");
+        item.estimatedCost = estimatedValue === "" ? "" : parseAmount(estimatedValue).toString();
+        item.actualAccomplishment = accomplishmentValue === "" ? "" : parsePercent(accomplishmentValue).toString();
+    });
+    project.programOfWorks.updatedAt = new Date().toLocaleString();
+    project.programOfWorks.updatedBy = userID;
+    activePowEditProjectId = "";
+    writeJSON("spms_projects", mockData);
+    logAction("Saved Program of Works", project.title);
+    loadProjects();
+    loadReports();
+    alert("Program of Works saved successfully.");
+}
 function saveAndRefresh() {
     writeJSON("spms_projects", mockData);
     loadProjects();
+    loadReports();
 }
 
 function refreshProjectsFromStorage() {
     mockData = readJSON("spms_projects", []);
     loadProjects();
+    loadReports();
 }
 window.refreshProjectsFromStorage = refreshProjectsFromStorage;
 window.saveAndRefresh = saveAndRefresh;
@@ -328,6 +541,7 @@ function showSection(sectionId) {
     document.getElementById("reportSection").style.display = "none";
     document.getElementById("formSection").style.display = "none";
     document.getElementById(sectionId).style.display = "block";
+    if (sectionId === "reportSection") loadReports();
 }
 
 function updateRoleBadge() {
@@ -369,7 +583,7 @@ function viewActivityLog() {
 
 function applyRoleVisibility() {
     const requestPanel = document.querySelector(".input-group");
-    if (requestPanel) requestPanel.style.display = userRoleType === "inspector" ? "block" : "none";
+    if (requestPanel) requestPanel.style.display = userRoleType === "contractor" ? "block" : "none";
 }
 function renderFormActionButtons(project, info, allowEdit) {
     if (!info.submissionId) return "";
@@ -399,34 +613,35 @@ function loadProjects() {
 
         if (userRoleType === "contractor") {
             if (project.status === "Pending") {
-                actionButtons = "<button style=\"background:#27ae60\" onclick=\"approveProject('" + project._id + "')\">Approve</button>" +
-                    "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"rejectProject('" + project._id + "')\">Reject</button>";
+                actionButtons = "<span style=\"color:#e67e22; font-size:12px;\">Awaiting Inspector Review</span>";
+            } else if (project.status === "Rejected") {
+                actionButtons = "<span style=\"color:#e74c3c; font-size:12px;\">Rejected by Inspector</span>";
             } else if (project.status === "Approved") {
-                actionButtons = "<button style=\"background:#2980b9\" onclick=\"setStatus('" + project._id + "','Ongoing')\">Start Project</button>" + renderFormActionButtons(project, info, false);
-            } else if (project.status === "Ongoing") {
-                actionButtons = "<button style=\"background:#27ae60\" onclick=\"setStatus('" + project._id + "','Completed')\">Mark Complete</button>" + renderFormActionButtons(project, info, false);
-            } else if (project.status === "Completed") {
-                actionButtons = "<span style=\"color:#27ae60;\">Completed</span>" + renderFormActionButtons(project, info, false);
+                actionButtons = "<span style=\"color:#27ae60; font-size:12px;\">Approved by Inspector</span>";
+                actionButtons += hasSavedForm ? renderFormActionButtons(project, info, false) : "<span style=\"color:#7f8c8d; font-size:12px; margin-left:5px;\">Waiting for Inspector to fill form</span>";
             } else {
-                actionButtons = "<span style=\"color:#7f8c8d;\">View Only</span>" + renderFormActionButtons(project, info, false);
+                actionButtons = "<span style=\"color:#7f8c8d;\">" + escapeHTML(project.status || "View Only") + "</span>" + renderFormActionButtons(project, info, false);
             }
         } else if (userRoleType === "inspector") {
             if (project.status === "Pending") {
-                actionButtons = "<span style=\"color:#e67e22; font-size:12px;\">Waiting for Contractor Approval</span>";
+                actionButtons = "<button style=\"background:#27ae60\" onclick=\"approveProject('" + project._id + "')\">Approve Request</button>" +
+                    "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"rejectProject('" + project._id + "')\">Reject Request</button>";
             } else if (project.status === "Approved" || project.status === "Ongoing" || project.status === "Completed") {
                 if (hasSavedForm) {
                     actionButtons = "<span style=\"color:#27ae60; font-size:12px;\">" + escapeHTML(formStatus || "Saved") + "</span>" + renderFormActionButtons(project, info, true);
                 } else {
-                    actionButtons = "<button style=\"background:#8e44ad\" onclick=\"fillProjectForm('" + project._id + "')\">Fill Form</button>";
+                    actionButtons = "<button style=\"background:#8e44ad\" onclick=\"fillProjectForm('" + project._id + "')\">Fill Requested Form</button>";
                 }
+            } else if (project.status === "Rejected") {
+                actionButtons = "<span style=\"color:#e74c3c;\">Rejected</span>";
             } else {
                 actionButtons = "<span style=\"color:#7f8c8d;\">No Action Required</span>";
             }
         } else {
             if (project.status === "Pending") {
-                actionButtons = "<span style=\"color:#e67e22; font-size:12px;\">Awaiting Contractor Review</span>" + renderFormActionButtons(project, info, false);
+                actionButtons = "<span style=\"color:#e67e22; font-size:12px;\">Awaiting Inspector Review</span>" + renderFormActionButtons(project, info, false);
             } else if (project.status === "Approved") {
-                actionButtons = "<span style=\"color:#27ae60; font-size:12px;\">Approved by Contractor</span>" +
+                actionButtons = "<span style=\"color:#27ae60; font-size:12px;\">Approved by Inspector</span>" +
                     "<button style=\"background:#2980b9; margin-left:5px;\" onclick=\"setStatus('" + project._id + "','Ongoing')\">Start Project</button>" + renderFormActionButtons(project, info, false);
             } else if (project.status === "Ongoing") {
                 actionButtons = "<button style=\"background:#27ae60\" onclick=\"setStatus('" + project._id + "','Completed')\">Mark Complete</button>" +
@@ -434,6 +649,8 @@ function loadProjects() {
             } else if (project.status === "Completed") {
                 actionButtons = "<span style=\"color:#27ae60;\">Project Completed</span>" + renderFormActionButtons(project, info, false) +
                     "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button>";
+            } else if (project.status === "Rejected") {
+                actionButtons = "<span style=\"color:#e74c3c;\">Rejected by Inspector</span>";
             } else {
                 actionButtons = renderFormActionButtons(project, info, false) + "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button>";
             }
@@ -472,15 +689,15 @@ function del(id) {
     }
 }
 
-function goToInspectorForm() {
+function goToContractorRequestForm() {
     const titleVal = document.getElementById("title").value.trim();
     if (!titleVal) return alert("Project Name required");
     document.getElementById("contractName").value = titleVal;
-    document.getElementById("inspectorID").value = userID;
+    document.getElementById("contractorID").value = userID;
     showSection("formSection");
 }
 
-function submitInspectorForm() {
+function submitContractorRequest() {
     const title = document.getElementById("contractName").value.trim();
     const formType = document.getElementById("formType").value;
     if (!title) return alert("Contract Name required");
@@ -493,23 +710,24 @@ function submitInspectorForm() {
         docs: [formType],
         requestedFormType: formType,
         requestedBy: userID,
-        inspectorName: document.getElementById("inspectorName").value.trim(),
-        inspectorID: document.getElementById("inspectorID").value.trim() || userID,
+        requestedRole: "Contractor",
+        contractorName: document.getElementById("contractorName").value.trim(),
+        contractorID: document.getElementById("contractorID").value.trim() || userID,
         createdAt: new Date().toLocaleString(),
         submittedForms: []
     };
 
     mockData.push(newProject);
-    logAction("Submitted Request for Contractor Approval", newProject.title);
+    logAction("Contractor requested form for Inspector approval", newProject.title);
     saveAndRefresh();
 
     document.getElementById("title").value = "";
     document.getElementById("location").value = "";
     document.getElementById("contractName").value = "";
-    document.getElementById("inspectorName").value = "";
-    document.getElementById("inspectorID").value = "";
+    document.getElementById("contractorName").value = "";
+    document.getElementById("contractorID").value = "";
     showSection("dashboardSection");
-    alert("Request \"" + title + "\" has been submitted to Contractor for approval.");
+    alert("Request \"" + title + "\" has been submitted to the Inspector for approval.");
 }
 
 function setStatus(id, newStatus) {
@@ -525,11 +743,16 @@ function approveProject(id) {
     const project = mockData.find(function (item) { return item._id === id; });
     if (!project) return;
     project.status = "Approved";
-    project.approvedBy = userID;
+    const approvedScope = getProjectFormType(project, getProjectFormInfo(project));
+    project.approvedScopeOfWork = approvedScope;
+    project.approvedScopes = Array.isArray(project.approvedScopes) ? project.approvedScopes : [];
+    if (project.approvedScopes.indexOf(approvedScope) === -1) project.approvedScopes.push(approvedScope);
+    ensureProgramOfWorks(project);
+    project.approvedByInspector = userID;
     project.approvedAt = new Date().toLocaleString();
-    logAction("Approved form request", project.title);
+    logAction("Inspector approved form request", project.title);
     saveAndRefresh();
-    alert("Project \"" + project.title + "\" has been approved. Inspector can now fill the form.");
+    alert("Request \"" + project.title + "\" has been approved. Inspector can now fill the requested form.");
 }
 
 function rejectProject(id) {
@@ -539,7 +762,7 @@ function rejectProject(id) {
     if (!reason) return;
     project.status = "Rejected";
     project.rejectionReason = reason;
-    project.rejectedBy = userID;
+    project.rejectedByInspector = userID;
     project.rejectedAt = new Date().toLocaleString();
     logAction("Rejected form request. Reason: " + reason, project.title);
     saveAndRefresh();
@@ -553,7 +776,7 @@ function prepareFormContext(project, mode, submissionId) {
     localStorage.setItem("currentProjectName", project.title || "");
     localStorage.setItem("currentFormType", formType);
     localStorage.setItem("currentProjectLocation", project.location || "");
-    localStorage.setItem("currentInspector", project.inspectorName || userID || "Inspector");
+    localStorage.setItem("currentInspector", localStorage.getItem("userID") || userID || "Inspector");
     localStorage.setItem("formMode", mode);
 
     if (mode === "view") {
@@ -605,6 +828,7 @@ displayGreeting();
 updateRoleBadge();
 applyRoleVisibility();
 loadProjects();
+loadReports();
 </script>
 <script src="storage.js"></script>
 </body>
