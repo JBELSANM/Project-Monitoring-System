@@ -6,7 +6,7 @@
         if (localStorage.getItem("spmsDataResetVersion") === DATA_RESET_VERSION) return;
         [
             "spms_projects", "formSubmissions", "activityLogs", "projectForms", "formRequests",
-            "currentProjectId", "currentProjectName", "currentFormType", "currentProjectLocation", "currentInspector",
+            "currentProjectId", "currentRequestId", "currentProjectName", "currentFormType", "currentProjectLocation", "currentInspector",
             "viewFormProjectId", "viewFormProjectName", "viewFormFileName", "viewFormData", "viewSubmissionId",
             "editSubmissionId", "formMode", "editMode", "viewModeFormData"
         ].forEach(function (key) { localStorage.removeItem(key); });
@@ -53,9 +53,10 @@
         writeJSON("spms_projects", projects);
     }
 
-    function latestMatchingSubmission(projectId, formType) {
+    function latestMatchingSubmission(projectId, formType, requestId) {
         const matches = getSubmissions().filter(function (submission) {
             return submission.projectId === projectId &&
+                (!requestId || submission.requestId === requestId) &&
                 (!formType || submission.formType === formType || submission.formFileName === fileName);
         });
         return matches.length ? matches[matches.length - 1] : null;
@@ -70,13 +71,15 @@
         }
 
         const projectId = localStorage.getItem("currentProjectId") || localStorage.getItem("viewFormProjectId") || params.get("projectId") || "";
+        const requestId = localStorage.getItem("currentRequestId") || params.get("requestId") || "";
         const formType = localStorage.getItem("currentFormType") || "";
-        return latestMatchingSubmission(projectId, formType);
+        return latestMatchingSubmission(projectId, formType, requestId);
     }
 
     const existingSubmission = selectedSubmission();
     const context = {
         projectId: localStorage.getItem("currentProjectId") || localStorage.getItem("viewFormProjectId") || (existingSubmission && existingSubmission.projectId) || params.get("projectId") || "",
+        requestId: localStorage.getItem("currentRequestId") || (existingSubmission && existingSubmission.requestId) || params.get("requestId") || "",
         projectName: localStorage.getItem("currentProjectName") || localStorage.getItem("viewFormProjectName") || (existingSubmission && existingSubmission.projectName) || "",
         formType: localStorage.getItem("currentFormType") || (existingSubmission && existingSubmission.formType) || document.title || "Inspection Form",
         location: localStorage.getItem("currentProjectLocation") || (existingSubmission && existingSubmission.location) || "",
@@ -262,14 +265,70 @@
         if (index === -1) return;
 
         const project = projects[index];
+        if (!Array.isArray(project.formRequests)) project.formRequests = [];
+        let request = submission.requestId
+            ? project.formRequests.find(function (item) { return item.requestId === submission.requestId; })
+            : null;
+        if (!request) {
+            request = project.formRequests.find(function (item) {
+                return item.formType === submission.formType && item.status === "Approved";
+            });
+        }
+        if (!request) {
+            request = {
+                requestId: submission.requestId || (project._id + "-request-" + (project.formRequests.length + 1)),
+                formType: submission.formType,
+                status: "Approved",
+                requestedAt: "",
+                requestedBy: project.requestedBy || "",
+                requestedRole: "Contractor",
+                contractorName: project.contractorName || "",
+                contractorID: project.contractorID || "",
+                submittedForms: []
+            };
+            project.formRequests.push(request);
+        }
+
+        submission.requestId = request.requestId;
+        if (!Array.isArray(request.submittedForms)) request.submittedForms = [];
+        request.submissionId = submission.id;
+        request.submissionStatus = submission.status;
+        request.savedAt = submission.savedAt;
+        request.submittedAt = submission.submittedAt;
+        request.updatedAt = submission.updatedAt;
+        request.inspector = submission.inspector;
+        request.workApproval = submission.workApproval;
+        if (request.status !== "Rejected") request.status = "Approved";
+
+        let requestReference = request.submittedForms.find(function (item) {
+            return item.submissionId === submission.id;
+        });
+        if (!requestReference) {
+            requestReference = {};
+            request.submittedForms.push(requestReference);
+        }
+        requestReference.requestId = request.requestId;
+        requestReference.submissionId = submission.id;
+        requestReference.formType = submission.formType;
+        requestReference.formFileName = submission.formFileName;
+        requestReference.status = submission.status;
+        requestReference.savedAt = submission.savedAt;
+        requestReference.submittedAt = submission.submittedAt;
+        requestReference.updatedAt = submission.updatedAt;
+        requestReference.inspector = submission.inspector;
+        requestReference.workApproval = submission.workApproval;
+
         if (!project.submittedForms) project.submittedForms = [];
         let reference = project.submittedForms.find(function (item) {
-            return item.submissionId === submission.id || item.formType === submission.formType;
+            return item.submissionId === submission.id ||
+                (submission.requestId && item.requestId === submission.requestId) ||
+                (!submission.requestId && item.formType === submission.formType);
         });
         if (!reference) {
             reference = {};
             project.submittedForms.push(reference);
         }
+        reference.requestId = request.requestId;
         reference.submissionId = submission.id;
         reference.formType = submission.formType;
         reference.formFileName = submission.formFileName;
@@ -298,13 +357,14 @@
 
         const submissions = getSubmissions();
         const explicitId = isEditMode ? localStorage.getItem("editSubmissionId") : "";
-        const existing = (explicitId && submissions.find(function (item) { return item.id === explicitId; })) || latestMatchingSubmission(context.projectId, context.formType);
+        const existing = (explicitId && submissions.find(function (item) { return item.id === explicitId; })) || latestMatchingSubmission(context.projectId, context.formType, context.requestId);
         const now = new Date().toLocaleString();
         const id = (existing && existing.id) || (context.projectId + "-" + Date.now());
         const finalStatus = status === "Submitted" ? "Submitted" : "Draft";
         const submission = Object.assign({}, existing || {}, {
             id: id,
             projectId: context.projectId,
+            requestId: context.requestId,
             projectName: context.projectName,
             formType: context.formType,
             formFileName: fileName,

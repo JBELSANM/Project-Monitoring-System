@@ -58,6 +58,14 @@
         .pow-status { font-size: 12px; color: #607d8b; margin-left: 6px; }
         .pow-readonly { color: #555; font-size: 12px; margin-top: 10px; }
         .empty-report { background: #fff; border-radius: 8px; padding: 24px; color: #7f8c8d; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .request-list { display: flex; flex-direction: column; gap: 8px; }
+        .request-item { border-left: 3px solid #bdc3c7; padding-left: 8px; }
+        .request-title { display: inline-block; margin-bottom: 2px; }
+        .request-meta { display: block; font-size: 10px; color: #607d8b; }
+        .request-actions { display: flex; flex-direction: column; gap: 8px; }
+        .request-action-row { border-bottom: 1px solid #ecf0f1; padding-bottom: 8px; }
+        .request-action-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .request-action-label { display: block; font-size: 11px; font-weight: bold; color: #34495e; margin-bottom: 4px; }
 
         .approved { color: #27ae60; font-weight: bold; }
         .pending { color: #e67e22; font-weight: bold; }
@@ -163,7 +171,7 @@ function resetSavedDataOnce() {
     if (localStorage.getItem("spmsDataResetVersion") === DATA_RESET_VERSION) return;
     [
         "spms_projects", "formSubmissions", "activityLogs", "projectForms", "formRequests",
-        "currentProjectId", "currentProjectName", "currentFormType", "currentProjectLocation", "currentInspector",
+        "currentProjectId", "currentRequestId", "currentProjectName", "currentFormType", "currentProjectLocation", "currentInspector",
         "viewFormProjectId", "viewFormProjectName", "viewFormFileName", "viewFormData", "viewSubmissionId",
         "editSubmissionId", "formMode", "editMode", "viewModeFormData"
     ].forEach(function (key) { localStorage.removeItem(key); });
@@ -231,9 +239,91 @@ function getSubmissions() {
     return readJSON("formSubmissions", []);
 }
 
-function getProjectFormInfo(project) {
+function normalizeProjectName(value) {
+    return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function makeRequestId(project) {
+    const count = Array.isArray(project.formRequests) ? project.formRequests.length + 1 : 1;
+    return project._id + "-request-" + Date.now() + "-" + count;
+}
+
+function ensureProjectRequests(project) {
+    let changed = false;
+    if (!Array.isArray(project.formRequests)) {
+        project.formRequests = [];
+        changed = true;
+    }
+
+    if (!project.formRequests.length && (project.requestedFormType || (project.docs && project.docs.length) || project.status)) {
+        const latestRef = Array.isArray(project.submittedForms) && project.submittedForms.length
+            ? project.submittedForms[project.submittedForms.length - 1]
+            : {};
+        project.formRequests.push({
+            requestId: project._id + "-request-1",
+            formType: project.requestedFormType || (project.docs && project.docs[0]) || "Structure Excavation Works Request",
+            status: project.status || "Pending",
+            requestedAt: project.createdAt || "",
+            requestedBy: project.requestedBy || "",
+            requestedRole: project.requestedRole || "Contractor",
+            contractorName: project.contractorName || "",
+            contractorID: project.contractorID || "",
+            submissionId: latestRef.submissionId || "",
+            submittedForms: latestRef.submissionId ? [latestRef] : [],
+            approvedByInspector: project.approvedByInspector || "",
+            approvedAt: project.approvedAt || "",
+            rejectedByInspector: project.rejectedByInspector || "",
+            rejectedAt: project.rejectedAt || "",
+            rejectionReason: project.rejectionReason || ""
+        });
+        changed = true;
+    }
+
+    project.formRequests.forEach(function (request, index) {
+        if (!request.requestId) {
+            request.requestId = project._id + "-request-" + (index + 1);
+            changed = true;
+        }
+        if (!request.formType) {
+            request.formType = project.requestedFormType || (project.docs && project.docs[0]) || "Structure Excavation Works Request";
+            changed = true;
+        }
+        if (!request.status) {
+            request.status = project.status || "Pending";
+            changed = true;
+        }
+        if (!Array.isArray(request.submittedForms)) {
+            request.submittedForms = [];
+            changed = true;
+        }
+    });
+    return changed;
+}
+
+function getProjectRequests(project) {
+    ensureProjectRequests(project);
+    return project.formRequests;
+}
+
+function requestHasSubmission(request) {
+    return Boolean(request && (request.submissionId || (request.submittedForms && request.submittedForms.length)));
+}
+
+function syncProjectRequestData() {
+    let changed = false;
+    mockData.forEach(function (project) {
+        if (ensureProjectRequests(project)) changed = true;
+    });
+    if (changed) writeJSON("spms_projects", mockData);
+}
+
+function getProjectFormInfo(project, requestId) {
     const submissions = getSubmissions();
-    const refs = Array.isArray(project.submittedForms) ? project.submittedForms : [];
+    const requests = getProjectRequests(project);
+    const request = requestId
+        ? requests.find(function (item) { return item.requestId === requestId; })
+        : requests.slice().reverse()[0];
+    const refs = request && Array.isArray(request.submittedForms) ? request.submittedForms : [];
 
     for (let index = refs.length - 1; index >= 0; index--) {
         const ref = refs[index];
@@ -243,24 +333,34 @@ function getProjectFormInfo(project) {
         }
         if (!submission && ref.formType) {
             submission = submissions.slice().reverse().find(function (item) {
-                return item.projectId === project._id && item.formType === ref.formType;
+                return item.projectId === project._id &&
+                    (request && item.requestId ? item.requestId === request.requestId : item.formType === ref.formType);
             });
         }
         if (submission) {
-            return { reference: ref, submission: submission, submissionId: submission.id };
+            return { request: request, reference: ref, submission: submission, submissionId: submission.id };
         }
         if (ref.submissionId) {
-            return { reference: ref, submission: null, submissionId: ref.submissionId };
+            return { request: request, reference: ref, submission: null, submissionId: ref.submissionId };
         }
     }
 
-    const fallback = submissions.slice().reverse().find(function (item) { return item.projectId === project._id; });
-    if (fallback) return { reference: null, submission: fallback, submissionId: fallback.id };
-    return { reference: null, submission: null, submissionId: "" };
+    if (request && request.submissionId) {
+        const direct = submissions.find(function (item) { return item.id === request.submissionId; });
+        return { request: request, reference: request, submission: direct || null, submissionId: request.submissionId };
+    }
+
+    const fallback = submissions.slice().reverse().find(function (item) {
+        return item.projectId === project._id &&
+            (request ? (item.requestId === request.requestId || (!item.requestId && item.formType === request.formType)) : true);
+    });
+    if (fallback) return { request: request, reference: null, submission: fallback, submissionId: fallback.id };
+    return { request: request || null, reference: null, submission: null, submissionId: "" };
 }
 
 function getProjectFormType(project, info) {
     return (info.submission && info.submission.formType) ||
+        (info.request && info.request.formType) ||
         (info.reference && info.reference.formType) ||
         project.requestedFormType ||
         (project.docs && project.docs[0]) ||
@@ -270,12 +370,13 @@ function getProjectFormType(project, info) {
 function getSubmissionStatus(info) {
     return (info.submission && info.submission.status) ||
         (info.reference && info.reference.status) ||
+        (info.request && info.request.status) ||
         (info.submissionId ? "Submitted" : "");
 }
 
 function getSubmissionDate(info) {
-    const source = info.submission || info.reference || {};
-    return source.submittedAt || source.savedAt || source.updatedAt || "";
+    const source = info.submission || info.reference || info.request || {};
+    return source.submittedAt || source.savedAt || source.updatedAt || source.approvedAt || source.requestedAt || "";
 }
 
 
@@ -284,24 +385,49 @@ function canEditProgramOfWorks() {
 }
 
 function isPowEligible(project) {
-    return ["Approved", "Ongoing", "Completed"].indexOf(project.status) !== -1;
+    return ["Approved", "Ongoing", "Completed"].indexOf(project.status) !== -1 ||
+        getProjectRequests(project).some(function (request) { return request.status === "Approved"; });
 }
 
-function getApprovedScopes(project) {
-    const scopes = [];
-    if (Array.isArray(project.approvedScopes)) {
-        project.approvedScopes.forEach(function (scope) { if (scope) scopes.push(scope); });
-    }
-    if (project.approvedScopeOfWork) scopes.push(project.approvedScopeOfWork);
-    if (project.requestedFormType) scopes.push(project.requestedFormType);
-    if (Array.isArray(project.docs)) {
-        project.docs.forEach(function (scope) { if (scope) scopes.push(scope); });
-    }
-    const unique = [];
-    scopes.forEach(function (scope) {
-        if (unique.indexOf(scope) === -1) unique.push(scope);
+function getApprovedScopeItems(project) {
+    const items = [];
+    getProjectRequests(project).forEach(function (request, index) {
+        if (request.status === "Approved") {
+            items.push({
+                requestId: request.requestId,
+                scopeOfWorks: request.formType || "Approved Scope of Work",
+                approvedAt: request.approvedAt || "",
+                requestedAt: request.requestedAt || "",
+                sequence: index + 1
+            });
+        }
     });
-    return unique.length ? unique : ["Approved Scope of Work"];
+
+    if (!items.length && Array.isArray(project.approvedScopes)) {
+        project.approvedScopes.forEach(function (scope, index) {
+            if (scope) {
+                items.push({
+                    requestId: "legacy-approved-" + (index + 1),
+                    scopeOfWorks: scope,
+                    approvedAt: project.approvedAt || "",
+                    requestedAt: project.createdAt || "",
+                    sequence: index + 1
+                });
+            }
+        });
+    }
+
+    if (!items.length && project.approvedScopeOfWork) {
+        items.push({
+            requestId: "legacy-approved-1",
+            scopeOfWorks: project.approvedScopeOfWork,
+            approvedAt: project.approvedAt || "",
+            requestedAt: project.createdAt || "",
+            sequence: 1
+        });
+    }
+
+    return items;
 }
 
 function ensureProgramOfWorks(project) {
@@ -316,17 +442,40 @@ function ensureProgramOfWorks(project) {
         changed = true;
     }
 
-    const scopes = getApprovedScopes(project);
-    scopes.forEach(function (scope) {
-        const existing = project.programOfWorks.items.find(function (item) { return item.scopeOfWorks === scope; });
+    const approvedItems = getApprovedScopeItems(project);
+    approvedItems.forEach(function (approvedItem) {
+        let existing = project.programOfWorks.items.find(function (item) {
+            return item.sourceRequestId && item.sourceRequestId === approvedItem.requestId;
+        });
+        if (!existing) {
+            existing = project.programOfWorks.items.find(function (item) {
+                return !item.sourceRequestId && item.scopeOfWorks === approvedItem.scopeOfWorks;
+            });
+        }
         if (!existing) {
             project.programOfWorks.items.push({
                 itemNo: "",
-                scopeOfWorks: scope,
+                sourceRequestId: approvedItem.requestId,
+                scopeOfWorks: approvedItem.scopeOfWorks,
+                approvedAt: approvedItem.approvedAt,
+                requestedAt: approvedItem.requestedAt,
                 estimatedCost: "",
                 actualAccomplishment: ""
             });
             changed = true;
+        } else {
+            if (existing.sourceRequestId !== approvedItem.requestId) {
+                existing.sourceRequestId = approvedItem.requestId;
+                changed = true;
+            }
+            if (existing.scopeOfWorks !== approvedItem.scopeOfWorks) {
+                existing.scopeOfWorks = approvedItem.scopeOfWorks;
+                changed = true;
+            }
+            if (existing.approvedAt !== approvedItem.approvedAt) {
+                existing.approvedAt = approvedItem.approvedAt;
+                changed = true;
+            }
         }
     });
 
@@ -585,17 +734,121 @@ function applyRoleVisibility() {
     const requestPanel = document.querySelector(".input-group");
     if (requestPanel) requestPanel.style.display = userRoleType === "contractor" ? "block" : "none";
 }
-function renderFormActionButtons(project, info, allowEdit) {
+function requestStatusClass(status) {
+    if (status === "Pending") return "pending";
+    if (status === "Approved" || status === "Submitted" || status === "Draft") return "approved";
+    if (status === "Rejected") return "rejected";
+    return "";
+}
+
+function getProjectDisplayStatus(project) {
+    const requests = getProjectRequests(project);
+    if (project.status === "Ongoing" || project.status === "Completed") return project.status;
+    if (requests.some(function (request) { return request.status === "Pending"; })) return "Pending";
+    if (requests.some(function (request) { return request.status === "Approved"; })) return "Approved";
+    if (requests.length && requests.every(function (request) { return request.status === "Rejected"; })) return "Rejected";
+    return project.status || "Pending";
+}
+
+function getRequestDisplayStatus(request, info) {
+    const approvalStatus = request.status || "Pending";
+    const formStatus = info.submissionId ? (getSubmissionStatus(info) || "Saved") : "";
+    if (formStatus && formStatus !== approvalStatus) return approvalStatus + " - Form " + formStatus;
+    return formStatus || approvalStatus;
+}
+
+function renderRequestProgress(project, request, index) {
+    const info = getProjectFormInfo(project, request.requestId);
+    const formType = getProjectFormType(project, info);
+    const statusText = getRequestDisplayStatus(request, info);
+    const formDate = getSubmissionDate(info);
+    return "<div class=\"request-item\">" +
+        "<span class=\"doc-link request-title\">Item " + (index + 1) + ": " + escapeHTML(formType || "N/A") + "</span>" +
+        "<span class=\"request-meta " + requestStatusClass(request.status) + "\">" + escapeHTML(statusText) + (formDate ? " - " + escapeHTML(formDate) : "") + "</span>" +
+        "</div>";
+}
+
+function renderFormActionButtons(project, request, info, allowEdit) {
     if (!info.submissionId) return "";
-    let buttons = "<button style=\"background:#8e44ad; margin-left:5px;\" onclick=\"viewSubmittedForm('" + project._id + "')\">View Form</button>";
+    let buttons = "<button style=\"background:#8e44ad; margin-left:5px;\" onclick=\"viewSubmittedForm('" + project._id + "','" + request.requestId + "')\">View Form</button>";
     if (allowEdit) {
-        buttons += "<button style=\"background:#16a085; margin-left:5px;\" onclick=\"editSubmittedForm('" + project._id + "')\">Edit Form</button>";
+        buttons += "<button style=\"background:#16a085; margin-left:5px;\" onclick=\"editSubmittedForm('" + project._id + "','" + request.requestId + "')\">Edit Form</button>";
     }
     return buttons;
 }
 
+function renderRequestActions(project, request) {
+    const info = getProjectFormInfo(project, request.requestId);
+    const formType = getProjectFormType(project, info);
+    const hasSavedForm = Boolean(info.submissionId);
+    let controls = "";
+
+    if (userRoleType === "contractor") {
+        if (request.status === "Pending") {
+            controls = "<span style=\"color:#e67e22; font-size:12px;\">Awaiting Inspector Review</span>";
+        } else if (request.status === "Rejected") {
+            controls = "<span style=\"color:#e74c3c; font-size:12px;\">Rejected by Inspector</span>";
+        } else if (request.status === "Approved") {
+            controls = "<span style=\"color:#27ae60; font-size:12px;\">Approved by Inspector</span>";
+            controls += hasSavedForm ? renderFormActionButtons(project, request, info, false) : "<span style=\"color:#7f8c8d; font-size:12px; margin-left:5px;\">Waiting for Inspector to fill form</span>";
+        } else {
+            controls = "<span style=\"color:#7f8c8d;\">" + escapeHTML(request.status || "View Only") + "</span>" + renderFormActionButtons(project, request, info, false);
+        }
+    } else if (userRoleType === "inspector") {
+        if (request.status === "Pending") {
+            controls = "<button style=\"background:#27ae60\" onclick=\"approveFormRequest('" + project._id + "','" + request.requestId + "')\">Approve Request</button>" +
+                "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"rejectFormRequest('" + project._id + "','" + request.requestId + "')\">Reject Request</button>";
+        } else if (request.status === "Approved") {
+            if (hasSavedForm) {
+                controls = "<span style=\"color:#27ae60; font-size:12px;\">" + escapeHTML(getSubmissionStatus(info) || "Saved") + "</span>" + renderFormActionButtons(project, request, info, true);
+            } else {
+                controls = "<button style=\"background:#8e44ad\" onclick=\"fillProjectForm('" + project._id + "','" + request.requestId + "')\">Fill Requested Form</button>";
+            }
+        } else if (request.status === "Rejected") {
+            controls = "<span style=\"color:#e74c3c;\">Rejected</span>";
+        } else {
+            controls = "<span style=\"color:#7f8c8d;\">No Action Required</span>" + renderFormActionButtons(project, request, info, true);
+        }
+    } else {
+        if (request.status === "Pending") {
+            controls = "<span style=\"color:#e67e22; font-size:12px;\">Awaiting Inspector Review</span>" + renderFormActionButtons(project, request, info, false);
+        } else if (request.status === "Approved") {
+            controls = hasSavedForm
+                ? renderFormActionButtons(project, request, info, false)
+                : "<span style=\"color:#7f8c8d; font-size:12px;\">Waiting for Inspector to fill form</span>";
+        } else if (request.status === "Rejected") {
+            controls = "<span style=\"color:#e74c3c;\">Rejected by Inspector</span>";
+        } else {
+            controls = renderFormActionButtons(project, request, info, false);
+        }
+    }
+
+    return "<div class=\"request-action-row\">" +
+        "<span class=\"request-action-label\">" + escapeHTML(formType) + "</span>" +
+        controls +
+        "</div>";
+}
+
+function renderProjectLifecycleActions(project) {
+    if (userRoleType !== "engineer") return "";
+    if (project.status === "Approved") {
+        return "<div style=\"margin-bottom:8px;\"><button style=\"background:#2980b9;\" onclick=\"setStatus('" + project._id + "','Ongoing')\">Start Project</button></div>";
+    }
+    if (project.status === "Ongoing") {
+        return "<div style=\"margin-bottom:8px;\"><button style=\"background:#27ae60\" onclick=\"setStatus('" + project._id + "','Completed')\">Mark Complete</button>" +
+            "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button></div>";
+    }
+    if (project.status === "Completed") {
+        return "<div style=\"margin-bottom:8px;\"><span style=\"color:#27ae60;\">Project Completed</span>" +
+            "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button></div>";
+    }
+    if (project.status === "Pending" || project.status === "Rejected") return "";
+    return "<div style=\"margin-bottom:8px;\"><button style=\"background:#e74c3c;\" onclick=\"del('" + project._id + "')\">Delete</button></div>";
+}
+
 function loadProjects() {
     mockData = readJSON("spms_projects", []);
+    syncProjectRequestData();
     document.getElementById("total").innerText = mockData.length;
     document.getElementById("ongoing").innerText = mockData.filter(function (project) { return project.status === "Ongoing"; }).length;
     document.getElementById("completed").innerText = mockData.filter(function (project) { return project.status === "Completed"; }).length;
@@ -604,74 +857,27 @@ function loadProjects() {
     list.innerHTML = "";
 
     mockData.forEach(function (project) {
-        const info = getProjectFormInfo(project);
-        const formType = getProjectFormType(project, info);
-        const formStatus = getSubmissionStatus(info);
-        const formDate = getSubmissionDate(info);
-        const hasSavedForm = Boolean(info.submissionId);
-        let actionButtons = "";
-
-        if (userRoleType === "contractor") {
-            if (project.status === "Pending") {
-                actionButtons = "<span style=\"color:#e67e22; font-size:12px;\">Awaiting Inspector Review</span>";
-            } else if (project.status === "Rejected") {
-                actionButtons = "<span style=\"color:#e74c3c; font-size:12px;\">Rejected by Inspector</span>";
-            } else if (project.status === "Approved") {
-                actionButtons = "<span style=\"color:#27ae60; font-size:12px;\">Approved by Inspector</span>";
-                actionButtons += hasSavedForm ? renderFormActionButtons(project, info, false) : "<span style=\"color:#7f8c8d; font-size:12px; margin-left:5px;\">Waiting for Inspector to fill form</span>";
-            } else {
-                actionButtons = "<span style=\"color:#7f8c8d;\">" + escapeHTML(project.status || "View Only") + "</span>" + renderFormActionButtons(project, info, false);
-            }
-        } else if (userRoleType === "inspector") {
-            if (project.status === "Pending") {
-                actionButtons = "<button style=\"background:#27ae60\" onclick=\"approveProject('" + project._id + "')\">Approve Request</button>" +
-                    "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"rejectProject('" + project._id + "')\">Reject Request</button>";
-            } else if (project.status === "Approved" || project.status === "Ongoing" || project.status === "Completed") {
-                if (hasSavedForm) {
-                    actionButtons = "<span style=\"color:#27ae60; font-size:12px;\">" + escapeHTML(formStatus || "Saved") + "</span>" + renderFormActionButtons(project, info, true);
-                } else {
-                    actionButtons = "<button style=\"background:#8e44ad\" onclick=\"fillProjectForm('" + project._id + "')\">Fill Requested Form</button>";
-                }
-            } else if (project.status === "Rejected") {
-                actionButtons = "<span style=\"color:#e74c3c;\">Rejected</span>";
-            } else {
-                actionButtons = "<span style=\"color:#7f8c8d;\">No Action Required</span>";
-            }
-        } else {
-            if (project.status === "Pending") {
-                actionButtons = "<span style=\"color:#e67e22; font-size:12px;\">Awaiting Inspector Review</span>" + renderFormActionButtons(project, info, false);
-            } else if (project.status === "Approved") {
-                actionButtons = "<span style=\"color:#27ae60; font-size:12px;\">Approved by Inspector</span>" +
-                    "<button style=\"background:#2980b9; margin-left:5px;\" onclick=\"setStatus('" + project._id + "','Ongoing')\">Start Project</button>" + renderFormActionButtons(project, info, false);
-            } else if (project.status === "Ongoing") {
-                actionButtons = "<button style=\"background:#27ae60\" onclick=\"setStatus('" + project._id + "','Completed')\">Mark Complete</button>" +
-                    "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button>" + renderFormActionButtons(project, info, false);
-            } else if (project.status === "Completed") {
-                actionButtons = "<span style=\"color:#27ae60;\">Project Completed</span>" + renderFormActionButtons(project, info, false) +
-                    "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button>";
-            } else if (project.status === "Rejected") {
-                actionButtons = "<span style=\"color:#e74c3c;\">Rejected by Inspector</span>";
-            } else {
-                actionButtons = renderFormActionButtons(project, info, false) + "<button style=\"background:#e74c3c; margin-left:5px;\" onclick=\"del('" + project._id + "')\">Delete</button>";
-            }
-        }
-
-        let progressDisplay = "<span class=\"doc-link\">" + escapeHTML(formType || "N/A") + "</span>";
-        if (hasSavedForm) {
-            progressDisplay += "<br><small style=\"font-size:10px; color:#27ae60;\">" + escapeHTML(formStatus || "Saved") + (formDate ? ": " + escapeHTML(formDate) : "") + "</small>";
-        }
+        const requests = getProjectRequests(project);
+        const displayStatus = getProjectDisplayStatus(project);
+        const progressDisplay = "<div class=\"request-list\">" + requests.map(function (request, index) {
+            return renderRequestProgress(project, request, index);
+        }).join("") + "</div>";
+        const actionButtons = renderProjectLifecycleActions(project) +
+            "<div class=\"request-actions\">" + requests.map(function (request) {
+                return renderRequestActions(project, request);
+            }).join("") + "</div>";
 
         let statusClass = "";
-        if (project.status === "Pending") statusClass = "pending";
-        else if (project.status === "Approved") statusClass = "approved";
-        else if (project.status === "Ongoing") statusClass = "ongoing";
-        else if (project.status === "Completed") statusClass = "completed";
-        else if (project.status === "Rejected") statusClass = "rejected";
+        if (displayStatus === "Pending") statusClass = "pending";
+        else if (displayStatus === "Approved") statusClass = "approved";
+        else if (displayStatus === "Ongoing") statusClass = "ongoing";
+        else if (displayStatus === "Completed") statusClass = "completed";
+        else if (displayStatus === "Rejected") statusClass = "rejected";
 
         list.innerHTML += "<tr>" +
             "<td><strong>" + escapeHTML(project.title || "Untitled") + "</strong></td>" +
             "<td>" + escapeHTML(project.location || "N/A") + "</td>" +
-            "<td class=\"" + statusClass + "\">" + escapeHTML(project.status || "Pending") + "</td>" +
+            "<td class=\"" + statusClass + "\">" + escapeHTML(displayStatus) + "</td>" +
             "<td>" + progressDisplay + "</td>" +
             "<td>" + actionButtons + "</td>" +
             "</tr>";
@@ -697,28 +903,71 @@ function goToContractorRequestForm() {
     showSection("formSection");
 }
 
+function findProjectForRequest(title) {
+    const target = normalizeProjectName(title);
+    return mockData.find(function (project) {
+        return normalizeProjectName(project.title) === target;
+    });
+}
+
+function createFormRequest(project, formType) {
+    return {
+        requestId: makeRequestId(project),
+        formType: formType,
+        status: "Pending",
+        requestedAt: new Date().toLocaleString(),
+        requestedBy: userID,
+        requestedRole: "Contractor",
+        contractorName: document.getElementById("contractorName").value.trim(),
+        contractorID: document.getElementById("contractorID").value.trim() || userID,
+        submittedForms: []
+    };
+}
+
 function submitContractorRequest() {
     const title = document.getElementById("contractName").value.trim();
     const formType = document.getElementById("formType").value;
     if (!title) return alert("Contract Name required");
 
-    const newProject = {
-        _id: Date.now().toString(),
-        title: title,
-        location: document.getElementById("location").value.trim() || "N/A",
-        status: "Pending",
-        docs: [formType],
-        requestedFormType: formType,
-        requestedBy: userID,
-        requestedRole: "Contractor",
-        contractorName: document.getElementById("contractorName").value.trim(),
-        contractorID: document.getElementById("contractorID").value.trim() || userID,
-        createdAt: new Date().toLocaleString(),
-        submittedForms: []
-    };
+    const enteredLocation = document.getElementById("location").value.trim();
+    let project = findProjectForRequest(title);
+    let createdNewProject = false;
 
-    mockData.push(newProject);
-    logAction("Contractor requested form for Inspector approval", newProject.title);
+    if (!project) {
+        project = {
+            _id: Date.now().toString(),
+            title: title,
+            location: enteredLocation || "N/A",
+            status: "Pending",
+            docs: [],
+            requestedFormType: formType,
+            requestedBy: userID,
+            requestedRole: "Contractor",
+            contractorName: document.getElementById("contractorName").value.trim(),
+            contractorID: document.getElementById("contractorID").value.trim() || userID,
+            createdAt: new Date().toLocaleString(),
+            submittedForms: [],
+            formRequests: []
+        };
+        mockData.push(project);
+        createdNewProject = true;
+    } else {
+        ensureProjectRequests(project);
+        if ((!project.location || project.location === "N/A") && enteredLocation) project.location = enteredLocation;
+        if (project.status !== "Ongoing" && project.status !== "Completed") project.status = "Pending";
+    }
+
+    const request = createFormRequest(project, formType);
+    project.formRequests.push(request);
+    if (!Array.isArray(project.docs)) project.docs = [];
+    project.docs.push(formType);
+    project.requestedFormType = formType;
+    project.requestedBy = userID;
+    project.requestedRole = "Contractor";
+    project.contractorName = request.contractorName;
+    project.contractorID = request.contractorID;
+
+    logAction((createdNewProject ? "Contractor created project and requested form" : "Contractor added new form request"), project.title + " - " + formType);
     saveAndRefresh();
 
     document.getElementById("title").value = "";
@@ -727,7 +976,7 @@ function submitContractorRequest() {
     document.getElementById("contractorName").value = "";
     document.getElementById("contractorID").value = "";
     showSection("dashboardSection");
-    alert("Request \"" + title + "\" has been submitted to the Inspector for approval.");
+    alert("Request \"" + formType + "\" has been submitted under \"" + title + "\" for Inspector approval.");
 }
 
 function setStatus(id, newStatus) {
@@ -739,40 +988,79 @@ function setStatus(id, newStatus) {
     alert("Project \"" + project.title + "\" is now " + newStatus + ".");
 }
 
+function updateProjectStatusAfterRequestReview(project) {
+    const requests = getProjectRequests(project);
+    if (project.status === "Ongoing" || project.status === "Completed") return;
+    if (requests.some(function (request) { return request.status === "Pending"; })) {
+        project.status = "Pending";
+    } else if (requests.some(function (request) { return request.status === "Approved"; })) {
+        project.status = "Approved";
+    } else if (requests.length && requests.every(function (request) { return request.status === "Rejected"; })) {
+        project.status = "Rejected";
+    }
+}
+
+function approveFormRequest(id, requestId) {
+    const project = mockData.find(function (item) { return item._id === id; });
+    if (!project) return;
+    const request = getProjectRequests(project).find(function (item) { return item.requestId === requestId; });
+    if (!request) return alert("Request not found.");
+    request.status = "Approved";
+    request.approvedByInspector = userID;
+    request.approvedAt = new Date().toLocaleString();
+    project.approvedScopeOfWork = request.formType;
+    project.approvedScopes = Array.isArray(project.approvedScopes) ? project.approvedScopes : [];
+    project.approvedScopes.push(request.formType);
+    updateProjectStatusAfterRequestReview(project);
+    ensureProgramOfWorks(project);
+    project.approvedByInspector = userID;
+    project.approvedAt = request.approvedAt;
+    logAction("Inspector approved form request", project.title + " - " + request.formType);
+    saveAndRefresh();
+    alert("Request \"" + request.formType + "\" under \"" + project.title + "\" has been approved. Inspector can now fill the requested form.");
+}
+
+function rejectFormRequest(id, requestId) {
+    const project = mockData.find(function (item) { return item._id === id; });
+    if (!project) return;
+    const request = getProjectRequests(project).find(function (item) { return item.requestId === requestId; });
+    if (!request) return alert("Request not found.");
+    const reason = prompt("Why are you rejecting \"" + request.formType + "\" under \"" + project.title + "\"?");
+    if (!reason) return;
+    request.status = "Rejected";
+    request.rejectionReason = reason;
+    request.rejectedByInspector = userID;
+    request.rejectedAt = new Date().toLocaleString();
+    updateProjectStatusAfterRequestReview(project);
+    project.rejectionReason = reason;
+    project.rejectedByInspector = userID;
+    project.rejectedAt = request.rejectedAt;
+    logAction("Rejected form request. Reason: " + reason, project.title + " - " + request.formType);
+    saveAndRefresh();
+    alert("Request \"" + request.formType + "\" under \"" + project.title + "\" has been rejected.");
+}
+
 function approveProject(id) {
     const project = mockData.find(function (item) { return item._id === id; });
     if (!project) return;
-    project.status = "Approved";
-    const approvedScope = getProjectFormType(project, getProjectFormInfo(project));
-    project.approvedScopeOfWork = approvedScope;
-    project.approvedScopes = Array.isArray(project.approvedScopes) ? project.approvedScopes : [];
-    if (project.approvedScopes.indexOf(approvedScope) === -1) project.approvedScopes.push(approvedScope);
-    ensureProgramOfWorks(project);
-    project.approvedByInspector = userID;
-    project.approvedAt = new Date().toLocaleString();
-    logAction("Inspector approved form request", project.title);
-    saveAndRefresh();
-    alert("Request \"" + project.title + "\" has been approved. Inspector can now fill the requested form.");
+    const request = getProjectRequests(project).find(function (item) { return item.status === "Pending"; });
+    if (!request) return alert("No pending form request found for this project.");
+    approveFormRequest(id, request.requestId);
 }
 
 function rejectProject(id) {
     const project = mockData.find(function (item) { return item._id === id; });
     if (!project) return;
-    const reason = prompt("Why are you rejecting \"" + project.title + "\"?");
-    if (!reason) return;
-    project.status = "Rejected";
-    project.rejectionReason = reason;
-    project.rejectedByInspector = userID;
-    project.rejectedAt = new Date().toLocaleString();
-    logAction("Rejected form request. Reason: " + reason, project.title);
-    saveAndRefresh();
-    alert("Project \"" + project.title + "\" has been rejected.");
+    const request = getProjectRequests(project).find(function (item) { return item.status === "Pending"; });
+    if (!request) return alert("No pending form request found for this project.");
+    rejectFormRequest(id, request.requestId);
 }
 
-function prepareFormContext(project, mode, submissionId) {
-    const info = getProjectFormInfo(project);
+function prepareFormContext(project, request, mode, submissionId) {
+    const info = getProjectFormInfo(project, request ? request.requestId : "");
     const formType = getProjectFormType(project, info);
     localStorage.setItem("currentProjectId", project._id);
+    localStorage.setItem("currentRequestId", request ? request.requestId : "");
     localStorage.setItem("currentProjectName", project.title || "");
     localStorage.setItem("currentFormType", formType);
     localStorage.setItem("currentProjectLocation", project.location || "");
@@ -793,29 +1081,39 @@ function prepareFormContext(project, mode, submissionId) {
     return { formType: formType, fileName: getFormFileName(formType) };
 }
 
-function openProjectForm(projectId, mode) {
+function openProjectForm(projectId, mode, requestId) {
     const project = mockData.find(function (item) { return item._id === projectId; });
     if (!project) return alert("Project not found.");
-    const info = getProjectFormInfo(project);
+    const requests = getProjectRequests(project);
+    const request = requestId
+        ? requests.find(function (item) { return item.requestId === requestId; })
+        : requests.slice().reverse().find(function (item) { return item.status === "Approved" || requestHasSubmission(item); });
+    if (!request) return alert("Request not found.");
+    const info = getProjectFormInfo(project, request.requestId);
     if ((mode === "view" || mode === "edit") && !info.submissionId) {
-        return alert("No saved form found for this project yet.");
+        return alert("No saved form found for this request yet.");
+    }
+    if (mode === "fill" && request.status !== "Approved") {
+        return alert("This form request must be approved by the Inspector first.");
     }
 
-    const prepared = prepareFormContext(project, mode, info.submissionId || "");
-    const query = "?mode=" + encodeURIComponent(mode) + (info.submissionId ? "&submissionId=" + encodeURIComponent(info.submissionId) : "");
+    const prepared = prepareFormContext(project, request, mode, info.submissionId || "");
+    const query = "?mode=" + encodeURIComponent(mode) +
+        "&requestId=" + encodeURIComponent(request.requestId) +
+        (info.submissionId ? "&submissionId=" + encodeURIComponent(info.submissionId) : "");
     window.open(prepared.fileName + query, "_blank");
 }
 
-function fillProjectForm(id) {
-    openProjectForm(id, "fill");
+function fillProjectForm(id, requestId) {
+    openProjectForm(id, "fill", requestId);
 }
 
-function viewSubmittedForm(projectId) {
-    openProjectForm(projectId, "view");
+function viewSubmittedForm(projectId, requestId) {
+    openProjectForm(projectId, "view", requestId);
 }
 
-function editSubmittedForm(projectId) {
-    openProjectForm(projectId, "edit");
+function editSubmittedForm(projectId, requestId) {
+    openProjectForm(projectId, "edit", requestId);
 }
 
 function logout() {
